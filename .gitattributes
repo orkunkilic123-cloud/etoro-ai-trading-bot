@@ -1,0 +1,2 @@
+# Recorded raw-source bytes are hashed before decoding; never normalize on add/checkout.
+/tests/fixtures/history/ecb-90d.xml -text
