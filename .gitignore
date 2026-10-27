@@ -223,3 +223,6 @@ __marimo__/
 .env.*
 !.env.example
 .mypy_cache/
+
+# Local persistent risk state and SQLite journal files within it.
+.risk-state/

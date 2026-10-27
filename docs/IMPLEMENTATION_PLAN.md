@@ -1,10 +1,10 @@
 # eToro DEMO bot: findings and proposed implementation
 
-Status: Phase 1 foundation and the two explicitly requested read-only adapters implemented by user authorization. No orders or authenticated broker requests have been made during implementation. See WINDOWS_SETUP.md for setup and limitations.
+Status: Phase 1 read-only foundation and Phase 2 Risk Management Foundation implemented by user authorization. Phase numbering follows the latest requested scope; the original read-only adapter phase is included in Phase 1. No orders or authenticated broker requests have been made during implementation. See WINDOWS_SETUP.md for setup and limitations.
 
 ## Evidence and limitations
 
-The repository contains README.md and a Python-oriented .gitignore, but no application, dependencies, tests or CI. Python 3.12 and Git are available. GitHub read access was verified previously and the checkout was clean before documentation work.
+The initial repository contained only README.md and a Python-oriented .gitignore. It now contains the read-only client, offline risk engine, pinned dependencies, tests and CI. Python 3.12 and Git are available. GitHub read access was verified previously and the checkout was clean before documentation work.
 
 Reference reviewed: https://github.com/Jakeschincariol/trader-skill (README on main). Its useful pattern is analysis → screening → sizing → risk → approved broker ticket, with offline fixtures and environment-based credentials. It describes Alpaca/IBKR integrations, not proof of eToro API behavior. Its optional permission to enable leverage is expressly excluded here. No reference scripts were installed or run.
 
@@ -64,9 +64,9 @@ Store no credentials in SQLite, logs, reports, command arguments, fixtures or AI
 | --- | --- | --- |
 | 0: official API verification | Applied documentation network access; official auth and demo capability matrix; free-access/eligibility confirmation | Every proposed route and credential requirement has an official citation; unresolved isolation blocks execution design |
 | 1: approved foundation | Explicit coding approval; Python 3.12 project, typed configuration, locked dependencies and offline CI | Config fails closed; secret redaction; no live mode; reproducible install |
-| 2: read-only adapter | Phase 0 schemas; user-configured credentials only for later integration | Mock success/error/pagination/rate-limit cases; verify demo identity, cash and positions with read-only integration; no mutation requests |
+| 2: risk management foundation | Offline Decimal risk rules; transactional SQLite kill switch, daily baseline/halt and reservations | 1% trade risk, 3% daily loss, no leverage; capacity/input checks, duplicate and restart/concurrency tests; execution disabled |
 | 3: analysis and proposals | Validated data sources, normalized instruments and portfolio | Missing/stale data rejection; deterministic proposals; backtests with costs, slippage, no lookahead and held-out evaluation |
-| 4: risk and approvals | Versioned limits, portfolio reconciliation and durable state | Boundary/property tests for cash, exposure and Decimal sizing; reject leverage/shorts; changed, expired, replayed or wrong-account approvals fail |
+| 4: risk integration and approvals | Versioned limits, portfolio reconciliation and durable state | Boundary/property tests for cash, exposure and Decimal sizing; reject leverage/shorts; changed, expired, replayed or wrong-account approvals fail |
 | 5: demo execution | Separately approved implementation; documented demo mutations and ambiguity handling | Fake-transport tests for real-path rejection, redirects, concurrency, crash recovery and partial fills; any actual DEMO order requires its own explicit authorization |
 | 6: supervised demo operation | Previous gates passed; operational limits and documented recovery | Sustained observation, reconciliation drift checks, kill-switch drills and restart tests; measured behavior before expanding scope |
 
@@ -77,3 +77,7 @@ Principal risks: documentation/access restrictions, demo/live route confusion, s
 ## Approval boundary
 
 The user authorized Phase 1 plus Demo portfolio and market-rates retrieval. The implementation includes environment configuration, a two-route GET allowlist, timeouts, bounded retries, conservative pacing, sanitized errors, mocked security tests and offline CI. No execution, strategy selection or autonomous trading is implemented. Future phases require separate approval; coding approval never authorizes orders. Real credential access remains untested. The credential-scope declaration is not independent verification of opaque keys: Demo binding must be checked in key management and enforced by eToro.
+
+## Phase 2 implementation
+
+See [RISK_MANAGEMENT.md](RISK_MANAGEMENT.md) for the implemented models, formulas, UTC baseline rules, deterministic decision codes, persistent kill switch and reservation lifecycle. Risk inputs are explicitly supplied; no credential access, broker calls or order execution were added. A PASS reserves local capacity but is not order approval. Read-only API normalization, actual account eligibility, external cash-flow reconciliation, continuous equity monitoring and reservation reconciliation remain prerequisites for future integration. Reservations intentionally have no automatic expiry or release API in this foundation.
