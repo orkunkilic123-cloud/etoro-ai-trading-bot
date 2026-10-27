@@ -94,3 +94,22 @@ The tests use synthetic keys, mocked HTTP, simulated time and temporary SQLite f
 For future approved read-only integration, compose `Scanner` with the explicit providers described in [MARKET_SCANNER.md](MARKET_SCANNER.md). `MarketClient` defaults to network disabled. Choose a small explicit watchlist, a scan interval (default 300 seconds), verified EUR/USD conversion and conservative fees. Unknown product leverage, currency, session or history coverage blocks ranking. This release supplies no live evidence provider, so do not fabricate those attestations to get a signal.
 
 If initializing a local analysis store later, create `.scanner-state` explicitly and keep its SQLite files separate from `.risk-state`. All scanner instances sharing a key must share the quota store. Do not run the older clients concurrently on that key without common quota coordination, or delete state to bypass cooldowns. Closing a window or restarting does not authorize orders. Automated scoring never changes the disabled execution default.
+
+
+## Phase 5 offline strategy-engine verification
+
+Use the existing environment and pinned dependencies. No keys or broker connection are needed:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_strategy.py
+.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
+.\.venv\Scripts\python.exe -m mypy
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m hatchling build
+```
+
+Tests initialize only temporary synthetic journals/accounts and run no authenticated API calls. There is no strategy execution command. See [STRATEGY_ENGINE.md](STRATEGY_ENGINE.md) for library composition and required evidence. Create `.strategy-state` explicitly for a future local analysis journal, separately from `.risk-state`; never reset safety state to clear a duplicate or halt. `Journal.initialize` refuses to overwrite existing files.
+
+Proposal generation is offline and reserves no capacity. Explicit RiskEngine review does reserve local capacity; do not use a real safety database for experiments. Exit results and stop/target levels are advice, never broker instructions. A fresh, verified earnings calendar and product/quantity-step/FX/cost evidence are required; do not substitute invented facts. Rules are immutable versions; Learning Agent suggestions require review before any promotion. Autonomous execution remains disabled.
