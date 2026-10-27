@@ -2,6 +2,7 @@
 
 import hashlib
 import sqlite3
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from decimal import Context, Decimal, DecimalException, localcontext
 
@@ -28,7 +29,25 @@ class RiskEngine:
         except (ValueError, TypeError, AttributeError, DecimalException, OverflowError):
             return Decision(False, ("INVALID_INPUT",))
 
-    def _evaluate(self, p: Proposal, a: AccountSnapshot, now: datetime) -> Decision:
+    def evaluate_in_transaction(
+        self,
+        db: sqlite3.Connection,
+        proposal: Proposal,
+        account: AccountSnapshot,
+        *,
+        now: datetime,
+    ) -> Decision:
+        """Use an existing safety transaction; caller owns commit/rollback."""
+        with localcontext(Context(prec=60)):
+            return self._evaluate(proposal, account, now, db)
+
+    def _evaluate(
+        self,
+        p: Proposal,
+        a: AccountSnapshot,
+        now: datetime,
+        connection: sqlite3.Connection | None = None,
+    ) -> Decision:
         if now.tzinfo is None:
             return Decision(False, ("INVALID_TIME",))
         now = now.astimezone(UTC)
@@ -62,7 +81,7 @@ class RiskEngine:
             ):
                 return Decision(False, ("INVALID_EXPOSURE",))
             instruments.add(exposure.instrument_id)
-        with self.store.transaction() as db:
+        with nullcontext(connection) if connection is not None else self.store.transaction() as db:
             row = db.execute("SELECT account, killed, last_seen FROM safety WHERE id=1").fetchone()
             if row is None or row[0] != a.account_id or row[1] not in (0, 1):
                 raise StateError("Invalid account safety state.")

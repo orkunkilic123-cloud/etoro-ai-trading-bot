@@ -1768,3 +1768,18 @@ Success 202: Order cancellation request accepted and queued for asynchronous pro
   "additionalProperties": false
 }
 ```
+
+## Phase 3 execution schema verification (2026-10-27)
+
+Re-fetched https://api-portal.etoro.com/api-reference/openapi.json before implementation. Relevant additional schema details:
+
+- `InstrumentEligibility`: currency-normalized `minPositionExposure`, `maxUnitsPerOrder`, allowOpen/Close/PartialClosePosition, unitsQuantityType (`whole`/`fractional`), allowedOrderQuantityType (`unitsOnly`/`amountOnly`/`all`), tradeUnitType, additionalBufferPercent and leverageConfigs.
+- `LeverageConfiguration`: settlementType, direction, leverageValues, isPotential, minPositionAmount, allowStopLossTakeProfit and min/maxStopLossPercentage. Percentages are explicitly described relative to allocated margin. Positive broker buffer percentages are not implemented because their exact reservation convention remains unclear.
+- `UnifiedOrderResponse`: orderId, referenceId (echoes x-request-id), token. 202 is acceptance only.
+- `GetOrderInfoResponse`: accountId, orderId, action, transaction, type, status.id, asset (instrumentId, currency, settlementType, leverage, side), requestedUnits and positionExecutions[].openingData.units. RemainingUnits must not be used to infer historical executed quantity.
+- `GetOrderInfoStatus`: 1 Received, 2 Placed, 3 Filled, 4 Rejected, 5 PartiallyFilled, 6 PendingCancel, 7 Canceled, 8 Expired, 9 CanceledPartiallyFilled, 10 RejectedPartiallyFilled, 11 WaitingForMarket, 12 PendingTriggeredRate.
+- Close submission: `POST /api/v1/trading/execution/demo/market-close-orders/positions/{positionId}` with InstrumentID and explicit UnitsToDeduct. Its 200 means submitted, not filled; use orderForClose.orderID to poll `GET /api/v1/trading/info/demo/close-orders/{orderId}`.
+- `OrderForCloseInfoResponse`: orderID, CID, instrumentID, statusID and positions[] with positionID/occurred/rate/units. Close statuses 3/4/7/8/9/10 are terminal; 1/2/5/6/11 pending. Statuses 9/10 include real partial execution within the Demo account. A cancelled order without execution has no executed position entries.
+- No documented close lookup by client request UUID was found. Without a returned close order ID, timeout recovery remains manual. No close POST idempotency guarantee is inferred from opening order documentation.
+
+The implementation uses fixed attached stopLossRate only after account eligibility confirms support. Take-profit, trailing stops, stop modification, cancel submissions and unified v3 close are not implemented. See DEMO_EXECUTION.md for the exact allowlist, payload policy, dispatch journal and deployment blockers.

@@ -63,3 +63,13 @@ Remove-Item Function:Set-SessionSecret
 Only the Demo portfolio and shared market rates GET routes are supported. Rates accept 1–1000 positive instrument IDs and preserve HTTP 206 as `partial=True`; quote delay and missing data must be handled by future analysis. Responses are JSON objects with otherwise unnormalized vendor fields; success does not prove trading readiness.
 
 The client serializes requests and conservatively paces both endpoints together at one request/second, including retries. Use one client/process per key: separate processes or other applications share the server quota but not this local limiter. Server cooldowns are honored; waits over five minutes abort rather than retry early. Safe reads retry at most twice for transport errors, 429, 502, 503 and 504; auth failures and redirects never retry. Account access and Windows installation still require validation on your machine.
+
+## Phase 3 offline execution-engine verification
+
+The separate Demo execution coordinator is disabled by default and is not connected to this CLI. It has no credential-loading or autonomous execution command. Validate it using mocked tests only:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_execution.py
+```
+
+See [DEMO_EXECUTION.md](DEMO_EXECUTION.md) for authorization, SQLite migration, risk integration, recovery and deployment limitations. Real account use requires a trusted Demo identity attestation provider and exact human order approval; neither is supplied by an environment-mode flag. Do not initialize or delete production safety state to clear a halt or duplicate reservation. Existing `check-demo` remains a read-only portfolio request.
