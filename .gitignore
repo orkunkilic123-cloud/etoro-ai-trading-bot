@@ -226,3 +226,6 @@ __marimo__/
 
 # Local persistent risk state and SQLite journal files within it.
 .risk-state/
+
+# Analysis cache and persistent scanner quota state.
+.scanner-state/

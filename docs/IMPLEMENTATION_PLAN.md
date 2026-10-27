@@ -66,7 +66,7 @@ Store no credentials in SQLite, logs, reports, command arguments, fixtures or AI
 | 1: approved foundation | Explicit coding approval; Python 3.12 project, typed configuration, locked dependencies and offline CI | Config fails closed; secret redaction; no live mode; reproducible install |
 | 2: risk management foundation | Offline Decimal risk rules; transactional SQLite kill switch, daily baseline/halt and reservations | 1% trade risk, 3% daily loss, no leverage; capacity/input checks, duplicate and restart/concurrency tests; execution disabled |
 | 3: Demo execution engine | Exact manual authorization, risk integration, broker eligibility, durable journal and asynchronous reconciliation | Mocked opening/closing, timeouts, partial fills, restart recovery and security; execution disabled by default |
-| 4: risk integration and approvals | Versioned limits, portfolio reconciliation and durable state | Boundary/property tests for cash, exposure and Decimal sizing; reject leverage/shorts; changed, expired, replayed or wrong-account approvals fail |
+| 4: market scanner | Verified market-data discovery/history, indicators, transparent scores, budget/cost screening and caching | Mocked contracts, indicator references, data expiry, quota and safety tests; no execution |
 | 5: demo execution | Separately approved implementation; documented demo mutations and ambiguity handling | Fake-transport tests for real-path rejection, redirects, concurrency, crash recovery and partial fills; any actual DEMO order requires its own explicit authorization |
 | 6: supervised demo operation | Previous gates passed; operational limits and documented recovery | Sustained observation, reconciliation drift checks, kill-switch drills and restart tests; measured behavior before expanding scope |
 
@@ -85,3 +85,9 @@ See [RISK_MANAGEMENT.md](RISK_MANAGEMENT.md) for the implemented models, formula
 ## Phase 3 implementation and deployment gates
 
 See [DEMO_EXECUTION.md](DEMO_EXECUTION.md). The coordinator supports only verified Demo opening/closing and status endpoints, with explicit expiring ticket approval, Demo identity evidence, unchanged risk limits and durable single-dispatch journaling. The original read-only client remains unchanged. Autonomous execution is disabled and no actual orders were placed. API credential scope/identity attestation, trusted portfolio normalization, an approval UI, sustained reservation release, safe close recovery without an order ID and account-specific integration are unresolved deployment prerequisites. Phase 3 is verified with mocks, not production account access.
+
+## Phase 4: market scanner implementation
+
+Phase 4 now follows the user's market-scanner scope. See [MARKET_SCANNER.md](MARKET_SCANNER.md) for official source provenance, exact endpoints, typed provider interfaces, completed-bar indicators, transparent scoring, EUR budget/cost screens, async batching, persistent quota/cache state and deterministic tests. No dependencies or trading permissions changed. Network scanning defaults off; autonomous execution remains disabled and no orders were placed.
+
+Remaining integration work: trusted unleveraged-product/currency evidence; exchange calendars and history/volume comparability; fresh FX and account-specific fee/free-access evidence; shared quotas across legacy and scanner clients; downstream strategy stop/size selection and complete portfolio/risk review. Scores never grant risk approval. API portal re-fetch returned 403; the prior official schema was re-inspected and that provenance is recorded. These gaps block unattended broker-backed use, not offline testing. Original later-phase approval/portfolio/reconciliation work remains deferred.
