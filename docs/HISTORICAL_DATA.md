@@ -127,3 +127,10 @@ See [INTRADAY_DATA.md](INTRADAY_DATA.md) for the current provider/terms comparis
 lack of qualifying hourly samples, configurable coverage and chronological warm-up checks,
 and remaining simulation-contract limitations. The Phase 7 daily and ECB reference samples
 are not hourly equity evidence. No trading permissions or source-integrity checks changed.
+
+## Optional Alpaca adapter
+
+[ALPACA_MARKET_DATA.md](ALPACA_MARKET_DATA.md) documents the new explicitly opt-in market-data
+client and offline page/manifest provider. Raw byte checksums, native timestamps and feed/price
+basis remain intact. No actual Alpaca access or dataset coverage has been verified; this does
+not resolve point-in-time, calendar-alignment, corporate-action or execution-evidence gaps.
