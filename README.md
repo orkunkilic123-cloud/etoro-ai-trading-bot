@@ -43,3 +43,11 @@ quality diagnostics and point-in-time split adjustment are available offline. Se
 attributed ECB reference FX is recorded in tests. Real strategy comparisons remain blocked
 by missing point-in-time quotes, actions and eligibility evidence. Readiness reports contain
 null returns, not profitability claims. Execution remains disabled by default.
+
+## Hourly history qualification (Phase 8)
+
+[Intraday provider research and blockers](docs/INTRADAY_DATA.md) found no verified source meeting
+free hourly access, acceptable terms and no private credentials together. The new offline hourly
+CSV/cache audit checks six-month coverage, session alignment, point-in-time warm-up and declared
+train/validation/test partitions before the backtester gate. No hourly stock/ETF samples or real
+performance results are claimed. See [Windows setup](docs/WINDOWS_SETUP.md) for the audit command.

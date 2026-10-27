@@ -168,3 +168,57 @@ bodies fail CSV validation. An existing report directory produces a sanitized fa
 `readiness.json`, `comparisons.csv` and `README.md` describe missing evidence; blocked comparisons
 are not backtest returns. Do not commit private/vendor payloads from `.historical-data`.
 No network calls, credentials or broker requests occur in the audit command.
+
+## Phase 8: hourly export readiness (offline)
+
+Read [hourly provider rights and blockers](INTRADAY_DATA.md). No approved remote hourly downloader
+is available. Only use an export you legitimately obtained with verified usage rights. Do not
+substitute daily candles or change their resolution labels.
+
+The normalized CSV header is exactly:
+
+```text
+start,end,open,high,low,close,volume,known_at
+```
+
+Timestamps need explicit offsets. Preserve the original CSV bytes when hashing, copying and
+caching; do not normalize newlines or strip a BOM first. Missing `known_at` is conservatively
+retrieval time. Supply a `source.json` matching `history.models.Source`, including actual source
+and terms URLs, retrieval timestamp, original SHA-256, symbol, license note and classification
+`historical_observation`. This is provenance supplied by you, not automatic verification.
+Specify the actual price basis, not an assumed raw/adjusted label.
+
+Prepare a `study.json` with predeclared dates, actual audit/calendar-review timestamps, exchange
+`XNYS`, currency `USD`, basis `raw` (only if verified), and `policy`. Example boundary structure
+for a prospective **data audit**, not a supplied dataset:
+
+```json
+{
+  "start": "2026-01-02", "end": "2026-10-26",
+  "train_at": "2026-01-12T00:00:00Z",
+  "validation_at": "2026-06-01T00:00:00Z",
+  "test_at": "2026-08-03T00:00:00Z",
+  "finish_at": "2026-10-26T21:00:00Z",
+  "audit_at": "2026-10-27T22:00:00Z",
+  "calendar_verified_at": "2026-10-27T17:13:37+00:00",
+  "exchange": "XNYS", "currency": "USD", "basis": "raw",
+  "policy": {"minimum_days": 183, "minimum_sessions": 120,
+             "warmup_bars": 35, "minimum_partition_sessions": 20}
+}
+```
+
+Use your actual review timestamps and predeclared study boundaries. Save the two JSON files and
+licensed export locally under ignored `.historical-data`, then run:
+
+```powershell
+python -m etoro_demo_bot.history.hourly_cli --csv .historical-data/hourly.csv --source .historical-data/source.json --study .historical-data/study.json --output .historical-data/hourly-audit.json
+python -m etoro_demo_bot.history.hourly_cli --snapshot '<snapshot-from-report>' --study .historical-data/study.json --output .historical-data/hourly-repeat.json
+python -m pytest -q
+python -m ruff check .
+python -m mypy
+```
+
+The CLI emits coverage findings even when the study is blocked; exit zero means the audit was
+written, not that a dataset passed. Schema/integrity errors fail with a sanitized message.
+Use new output paths. The report contains null metrics and does not run backtests or orders.
+Only reviewed 2026 sessions are supported; earlier years require another reviewed calendar.
