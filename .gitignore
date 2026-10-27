@@ -229,3 +229,6 @@ __marimo__/
 
 # Analysis cache and persistent scanner quota state.
 .scanner-state/
+
+# Local strategy decisions and durable duplicate claims.
+.strategy-state/
