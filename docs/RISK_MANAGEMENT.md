@@ -1,6 +1,6 @@
 # Phase 2: risk management foundation
 
-This offline module evaluates normalized proposals. It never reads credentials, fetches account data, builds broker orders, or invokes the API client. A PASS means only that risk checks passed and local capacity was reserved. `execution_authorized` remains false. Existing broker routing still allows only the two GET endpoints; execution and autonomous trading remain disabled.
+This offline module evaluates normalized proposals. It never reads credentials, fetches account data, builds broker orders, or invokes the API client. A PASS means only that risk checks passed and local capacity was reserved. `execution_authorized` remains false. The original broker client still allows only the two GET endpoints. Phase 3 adds a separate, disabled-by-default execution coordinator (DEMO_EXECUTION.md); this risk module itself has no execution capability and autonomous trading remains disabled.
 
 ## Modules and contract
 
@@ -80,3 +80,5 @@ assert result.execution_authorized is False
 Decisions carry stable reason codes: INVALID_INPUT/TIME/ACCOUNT/BALANCE/EXPOSURE/PROPOSAL/PRICE/STOP_LOSS/CALCULATION, STALE_ACCOUNT/MARKET_DATA, STATE_UNAVAILABLE, MISSING_DAILY_BASELINE, CLOCK_ROLLBACK, KILL_SWITCH_ACTIVE, DAILY_LOSS_LIMIT, LEVERAGE_FORBIDDEN, INSTRUMENT_FORBIDDEN, DUPLICATE_PROPOSAL, TRADE_RISK_LIMIT, POSITION_SIZE_LIMIT, TOTAL_EXPOSURE_LIMIT, INSTRUMENT_EXPOSURE_LIMIT, CONCURRENT_POSITION_LIMIT and INSUFFICIENT_BALANCE. Successful evaluation reports RISK_PASS_EXECUTION_DISABLED. Validation returns early on unusable inputs; applicable numeric capacity failures are returned together in fixed order.
 
 Tests cover exact 1%/3% boundaries, buffers, invalid Decimal values, stale/future timestamps, incomplete accounts, exposure/cash/slot limits, numeric canonicalization, cross-restart duplicate/kill/daily state, UTC rollover, clock rollback, corruption, missing/locked state, transactional concurrency and unchanged order-route rejection tests. Future broker integration, cash-flow reconciliation and actual instrument eligibility remain separate, unimplemented prerequisites.
+
+Phase 3 adds `RiskEngine.evaluate_in_transaction` for the coordinator's atomic risk/journal operations. It applies the same formulas and constraints; it does not grant execution authorization. The coordinator reruns those rules immediately before dispatch and preserves reservations on uncertain outcomes. The documented conservative reservation lifecycle still applies.

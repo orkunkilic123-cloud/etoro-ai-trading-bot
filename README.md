@@ -1,7 +1,8 @@
-# eToro Demo API and risk foundation
+# eToro Demo trading foundations
 
-Python 3.12+ read-only client. Exact allowlist: Demo portfolio GET and market rates GET. All order routes and Real portfolio routes are blocked; no autonomous trading is implemented.
+Python 3.12+ read-only API client, risk engine and opt-in Demo execution coordinator. The read-only client allows only Demo portfolio GET and market rates GET. The original client blocks order routes and Real portfolio routes. A separate, disabled-by-default Demo execution coordinator requires exact manual approval and risk checks; no autonomous trading is implemented.
 
+- [Demo execution: authorization, journal and recovery](docs/DEMO_EXECUTION.md)
 - [Risk management: policy, persistence and offline example](docs/RISK_MANAGEMENT.md)
 - [Windows setup and read-only connection test](docs/WINDOWS_SETUP.md)
 - [Architecture and roadmap](docs/IMPLEMENTATION_PLAN.md)

@@ -1,6 +1,6 @@
 # eToro DEMO bot: findings and proposed implementation
 
-Status: Phase 1 read-only foundation and Phase 2 Risk Management Foundation implemented by user authorization. Phase numbering follows the latest requested scope; the original read-only adapter phase is included in Phase 1. No orders or authenticated broker requests have been made during implementation. See WINDOWS_SETUP.md for setup and limitations.
+Status: Phase 1 read-only foundation and Phase 2 Risk Management Foundation and Phase 3 opt-in Demo execution coordinator implemented by user authorization. Phase numbering follows the latest requested scope; the original read-only adapter phase is included in Phase 1. No orders or authenticated broker requests have been made during implementation. See WINDOWS_SETUP.md for setup and limitations.
 
 ## Evidence and limitations
 
@@ -65,7 +65,7 @@ Store no credentials in SQLite, logs, reports, command arguments, fixtures or AI
 | 0: official API verification | Applied documentation network access; official auth and demo capability matrix; free-access/eligibility confirmation | Every proposed route and credential requirement has an official citation; unresolved isolation blocks execution design |
 | 1: approved foundation | Explicit coding approval; Python 3.12 project, typed configuration, locked dependencies and offline CI | Config fails closed; secret redaction; no live mode; reproducible install |
 | 2: risk management foundation | Offline Decimal risk rules; transactional SQLite kill switch, daily baseline/halt and reservations | 1% trade risk, 3% daily loss, no leverage; capacity/input checks, duplicate and restart/concurrency tests; execution disabled |
-| 3: analysis and proposals | Validated data sources, normalized instruments and portfolio | Missing/stale data rejection; deterministic proposals; backtests with costs, slippage, no lookahead and held-out evaluation |
+| 3: Demo execution engine | Exact manual authorization, risk integration, broker eligibility, durable journal and asynchronous reconciliation | Mocked opening/closing, timeouts, partial fills, restart recovery and security; execution disabled by default |
 | 4: risk integration and approvals | Versioned limits, portfolio reconciliation and durable state | Boundary/property tests for cash, exposure and Decimal sizing; reject leverage/shorts; changed, expired, replayed or wrong-account approvals fail |
 | 5: demo execution | Separately approved implementation; documented demo mutations and ambiguity handling | Fake-transport tests for real-path rejection, redirects, concurrency, crash recovery and partial fills; any actual DEMO order requires its own explicit authorization |
 | 6: supervised demo operation | Previous gates passed; operational limits and documented recovery | Sustained observation, reconciliation drift checks, kill-switch drills and restart tests; measured behavior before expanding scope |
@@ -81,3 +81,7 @@ The user authorized Phase 1 plus Demo portfolio and market-rates retrieval. The 
 ## Phase 2 implementation
 
 See [RISK_MANAGEMENT.md](RISK_MANAGEMENT.md) for the implemented models, formulas, UTC baseline rules, deterministic decision codes, persistent kill switch and reservation lifecycle. Risk inputs are explicitly supplied; no credential access, broker calls or order execution were added. A PASS reserves local capacity but is not order approval. Read-only API normalization, actual account eligibility, external cash-flow reconciliation, continuous equity monitoring and reservation reconciliation remain prerequisites for future integration. Reservations intentionally have no automatic expiry or release API in this foundation.
+
+## Phase 3 implementation and deployment gates
+
+See [DEMO_EXECUTION.md](DEMO_EXECUTION.md). The coordinator supports only verified Demo opening/closing and status endpoints, with explicit expiring ticket approval, Demo identity evidence, unchanged risk limits and durable single-dispatch journaling. The original read-only client remains unchanged. Autonomous execution is disabled and no actual orders were placed. API credential scope/identity attestation, trusted portfolio normalization, an approval UI, sustained reservation release, safe close recovery without an order ID and account-specific integration are unresolved deployment prerequisites. Phase 3 is verified with mocks, not production account access.
