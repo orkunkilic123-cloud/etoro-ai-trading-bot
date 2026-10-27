@@ -1783,3 +1783,9 @@ Re-fetched https://api-portal.etoro.com/api-reference/openapi.json before implem
 - No documented close lookup by client request UUID was found. Without a returned close order ID, timeout recovery remains manual. No close POST idempotency guarantee is inferred from opening order documentation.
 
 The implementation uses fixed attached stopLossRate only after account eligibility confirms support. Take-profit, trailing stops, stop modification, cancel submissions and unified v3 close are not implemented. See DEMO_EXECUTION.md for the exact allowlist, payload policy, dispatch journal and deployment blockers.
+
+## Phase 4 scanner contract review (2026-10-27)
+
+A fresh GET of the official OpenAPI URL returned HTTP 403. Scanner implementation instead re-inspected the official schema successfully retrieved during Phase 3 earlier in this environment (SHA-256 `6fef7174f485d4bce880b85e7c0f5f0a71637f4dd9ced8258b94d2d4ce87a491`). This is a saved official source, not a newly successful remote verification. No authenticated requests or credential inspection occurred.
+
+[MARKET_SCANNER.md](MARKET_SCANNER.md) records the exact four-route scanner allowlist, request/response fields, batching limits, indicator definitions and deployment gaps. Routes are v2 instruments (cursor pagination with `type=Stocks/ETF`), v2 rates (1000 IDs, 206 partial), documented v1 hourly OHLCV candles (100 candles requested; max documented 1000), and non-executing v2 Demo eligibility (100 IDs, USD). No fundamental-data route or FX instrument ID was invented. The v2 metadata schema does not establish currency, embedded ETF leverage, or a complete trading calendar; external verified evidence is required. Unknown/missing volume is not synthesized. Quota ownership must be shared with any future concurrent client using the same key.

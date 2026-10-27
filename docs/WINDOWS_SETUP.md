@@ -1,6 +1,6 @@
 # Windows PowerShell setup (Python 3.12+)
 
-Use a free Python installation from python.org and run these commands from the repository root. No paid service is required. This client has no order API or autonomous trading loop.
+Use a free Python installation from python.org and run these commands from the repository root. No paid service is required. The CLI is read-only; the separate execution coordinator remains disabled by default. There is no autonomous trading loop.
 
 ## Install and verify offline
 
@@ -73,3 +73,24 @@ The separate Demo execution coordinator is disabled by default and is not connec
 ```
 
 See [DEMO_EXECUTION.md](DEMO_EXECUTION.md) for authorization, SQLite migration, risk integration, recovery and deployment limitations. Real account use requires a trusted Demo identity attestation provider and exact human order approval; neither is supplied by an environment-mode flag. Do not initialize or delete production safety state to clear a halt or duplicate reservation. Existing `check-demo` remains a read-only portfolio request.
+
+
+## Phase 4 offline market-scanner verification
+
+No credentials, paid services or additional dependencies are needed:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_scanner.py
+.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
+.\.venv\Scripts\python.exe -m mypy
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m hatchling build
+```
+
+The tests use synthetic keys, mocked HTTP, simulated time and temporary SQLite files. Do not configure real keys for these tests. No scanner/execution command is added to the CLI. The existing `check-demo` command is unrelated to scanner validation and is unnecessary here.
+
+For future approved read-only integration, compose `Scanner` with the explicit providers described in [MARKET_SCANNER.md](MARKET_SCANNER.md). `MarketClient` defaults to network disabled. Choose a small explicit watchlist, a scan interval (default 300 seconds), verified EUR/USD conversion and conservative fees. Unknown product leverage, currency, session or history coverage blocks ranking. This release supplies no live evidence provider, so do not fabricate those attestations to get a signal.
+
+If initializing a local analysis store later, create `.scanner-state` explicitly and keep its SQLite files separate from `.risk-state`. All scanner instances sharing a key must share the quota store. Do not run the older clients concurrently on that key without common quota coordination, or delete state to bypass cooldowns. Closing a window or restarting does not authorize orders. Automated scoring never changes the disabled execution default.
