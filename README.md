@@ -33,3 +33,13 @@ Phase 4 adds an analysis-only market scanner with batched official data routes, 
 Phase 5 adds deterministic momentum breakout, trend-following and mean-reversion proposals for intraday/short-swing analysis. Point-in-time evidence, earnings coverage, conservative sizing and persistent decision journaling are required. Risk review is explicit; strategy code cannot invoke execution. No profitability claim or autonomous trading is enabled.
 
 Phase 6 adds independent chronological backtesting with the existing strategy/risk engines, isolated simulated accounting, conservative later-quote fills, benchmarks and reproducible reports. Included fixtures are explicitly synthetic and provide no profitability evidence. See the backtesting guide before interpreting any metric.
+
+## Historical research data (Phase 7)
+
+Daily CSV ingestion, source provenance, immutable SQLite snapshots, NYSE 2026 calendars,
+quality diagnostics and point-in-time split adjustment are available offline. See
+[historical data and licensing](docs/HISTORICAL_DATA.md) and
+[Windows instructions](docs/WINDOWS_SETUP.md). A public IBM sample was audited locally;
+attributed ECB reference FX is recorded in tests. Real strategy comparisons remain blocked
+by missing point-in-time quotes, actions and eligibility evidence. Readiness reports contain
+null returns, not profitability claims. Execution remains disabled by default.

@@ -1,0 +1,10 @@
+{
+  "provider": "ECB",
+  "url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml",
+  "terms_url": "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html",
+  "retrieved_at": "2026-10-27T16:45:42.390856+00:00",
+  "raw_sha256": "b0ad32da0fcc42e0459d1cb2527c4ccc617f2dcd42a9a51e5326e84380111135",
+  "classification": "historical_observation",
+  "license_note": "Source: European Central Bank. Unmodified public reference rates; attribution required. Not executable FX quotes.",
+  "redistribution_allowed": true
+}

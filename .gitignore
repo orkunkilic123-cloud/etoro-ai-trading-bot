@@ -235,3 +235,6 @@ __marimo__/
 
 # Local replay state, archived inputs and generated research reports.
 .backtest-output/
+
+# Licensed historical payloads and local evidence archives.
+.historical-data/

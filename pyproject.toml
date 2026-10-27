@@ -7,7 +7,7 @@ name = "etoro-demo-bot"
 version = "0.1.0"
 description = "Read-only eToro Demo API foundation"
 requires-python = ">=3.12"
-dependencies = ["httpx==0.28.1"]
+dependencies = ["httpx==0.28.1", "tzdata==2026.5"]
 
 [project.optional-dependencies]
 dev = ["pytest==8.3.5", "ruff==0.11.13", "mypy==1.15.0"]

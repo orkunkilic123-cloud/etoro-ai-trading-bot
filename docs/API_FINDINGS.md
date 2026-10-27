@@ -1789,3 +1789,12 @@ The implementation uses fixed attached stopLossRate only after account eligibili
 A fresh GET of the official OpenAPI URL returned HTTP 403. Scanner implementation instead re-inspected the official schema successfully retrieved during Phase 3 earlier in this environment (SHA-256 `6fef7174f485d4bce880b85e7c0f5f0a71637f4dd9ced8258b94d2d4ce87a491`). This is a saved official source, not a newly successful remote verification. No authenticated requests or credential inspection occurred.
 
 [MARKET_SCANNER.md](MARKET_SCANNER.md) records the exact four-route scanner allowlist, request/response fields, batching limits, indicator definitions and deployment gaps. Routes are v2 instruments (cursor pagination with `type=Stocks/ETF`), v2 rates (1000 IDs, 206 partial), documented v1 hourly OHLCV candles (100 candles requested; max documented 1000), and non-executing v2 Demo eligibility (100 IDs, USD). No fundamental-data route or FX instrument ID was invented. The v2 metadata schema does not establish currency, embedded ETF leverage, or a complete trading calendar; external verified evidence is required. Unknown/missing volume is not synthesized. Quota ownership must be shared with any future concurrent client using the same key.
+
+## Phase 7 historical-data review (2026-10-27)
+
+Fresh portal/Builders requests returned HTTP 403. A retained official OpenAPI snapshot also
+documents `/api/v1/data/instruments/{instrumentId}/candles` and `/candles/coverage` under the
+same instrument prefix (shared 120 requests/60 seconds), in addition to the legacy history
+routes. See [historical research](HISTORICAL_DATA.md) for exact paths, parameters, snapshot
+checksum and unresolved adjustments/coverage. No authenticated calls or allowlist expansion
+were made. Saved schema evidence must not be described as freshly verified account access.

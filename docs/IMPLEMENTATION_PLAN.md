@@ -105,3 +105,19 @@ No broker endpoints, permissions, credentials or dependencies changed. Remaining
 See [BACKTESTING.md](BACKTESTING.md). Offline chronological replay uses the existing strategies, ExitMonitor and RiskEngine, with new isolated simulation state only. It models EUR 500/1,000 funding, later-quote partial fills, costs, gaps, cash constraints, daily halts and durable duplicate protection. Reports include benchmarks, undefined-metric handling, data/source/configuration digests and provenance. Training-only selection freezes plans before validation/test; walk-forward test windows are disjoint.
 
 No trustworthy historical archive is available or claimed. Bundled inputs are labelled synthetic, including eligibility, liquidity, sessions and earnings evidence. Real-data validation, corporate actions, multi-instrument allocation and independently calibrated fills remain outstanding. Simulation reservation retirement is not a production release API. Existing trading permissions, credential handling, risk limits and disabled autonomous execution remain unchanged.
+
+### Phase 7 — historical evidence foundation
+
+Implemented provider-neutral daily/hourly import contracts, Alpha Vantage raw daily parser,
+ECB reference parser, immutable SQLite evidence caching, NYSE 2026 session validation,
+quality checks, point-in-time split adjustment and an explicit Phase 6 replay gate.
+[Research, observed coverage and limitations](HISTORICAL_DATA.md) distinguish downloaded
+observations from verified replay evidence. Local public IBM audit is reproducible; ECB
+recorded integration fixture is attributed and licensed for reuse.
+
+**Remaining:** independent real-data validation and strategy/benchmark comparisons are blocked;
+no trustworthy full quote/FX/eligibility/earnings/action bundle was obtained. Daily-only data
+cannot be substituted into existing hourly strategies. Future daily strategy semantics or a
+licensed intraday source require explicit design and tests. Intraday vendor adapter, expanded
+calendar coverage, corporate-action portfolio accounting, delisted universe coverage and
+historical event vintages remain dependencies. No execution or risk policy changes.

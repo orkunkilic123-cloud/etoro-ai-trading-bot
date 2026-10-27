@@ -134,3 +134,37 @@ No credentials, market download or new dependencies are needed. These commands r
 Output directories must be new; reruns deliberately refuse to overwrite evidence or safety state. Open `comparison.md` and each strategy's `report.md` locally. JSON, CSV, checksums, complete input archives and isolated simulation journals are also saved. All results are prominently synthetic; do not present them as historical returns or evidence of profitability. No order execution occurs.
 
 See [BACKTESTING.md](BACKTESTING.md) for library input contracts, chronological splits, metrics and data limitations. Keep replay output separate from `.risk-state` and `.strategy-state`; never point experiments at production state. There is no real-data downloader or credential configuration step. Supply independently reviewed historical evidence through the typed Dataset interface before conducting a real-data study.
+
+## Phase 7: offline historical-data audit
+
+No eToro environment variables are required. Read [provider terms and limitations](HISTORICAL_DATA.md)
+first. For eligible personal non-commercial research, the official Alpha Vantage documentation
+provides this public demo URL (`demo` is the published sample identifier, not a private key).
+Download once; reuse the SQLite snapshot thereafter. Standard free quota is 25 requests/day;
+do not loop downloads, retry throttling, or substitute a premium function.
+
+```powershell
+python -m pip install -r requirements-dev.lock
+python -m pip install --no-deps --no-build-isolation -e .
+New-Item -ItemType Directory -Force .historical-data | Out-Null
+Invoke-WebRequest -Uri 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo&datatype=csv' -OutFile '.historical-data/ibm.csv' -TimeoutSec 30
+$retrievedAt = [DateTimeOffset]::UtcNow.ToString('o')
+python -m etoro_demo_bot.history --csv .historical-data/ibm.csv --symbol IBM --retrieved-at $retrievedAt --output .historical-data/ibm-audit
+python -m pytest -q
+python -m ruff check .
+python -m mypy
+```
+
+Use a new output directory for each audit (existing reports are never overwritten). Copy the
+printed snapshot identifier to reproduce the audit entirely offline:
+
+```powershell
+python -m etoro_demo_bot.history --snapshot '<printed-snapshot-id>' --output .historical-data/ibm-repeat
+```
+
+The reviewed calendar covers 2026 only; other years fail closed. Symbol metadata in a cached
+snapshot is retained. Download time is not original candle publication time. HTTP error/JSON
+bodies fail CSV validation. An existing report directory produces a sanitized failure.
+`readiness.json`, `comparisons.csv` and `README.md` describe missing evidence; blocked comparisons
+are not backtest returns. Do not commit private/vendor payloads from `.historical-data`.
+No network calls, credentials or broker requests occur in the audit command.
