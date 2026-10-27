@@ -120,3 +120,10 @@ reviewed historical quote/session/FX and eligibility events, earnings calendar v
 accounting, and independent data checks. Alternatively, a separately specified daily strategy/fill
 contract is needed; it must not silently change the existing strategies. Short recent samples
 cannot support meaningful train/validation/final-test or walk-forward conclusions.
+
+## Phase 8 follow-up
+
+See [INTRADAY_DATA.md](INTRADAY_DATA.md) for the current provider/terms comparison, observed
+lack of qualifying hourly samples, configurable coverage and chronological warm-up checks,
+and remaining simulation-contract limitations. The Phase 7 daily and ECB reference samples
+are not hourly equity evidence. No trading permissions or source-integrity checks changed.

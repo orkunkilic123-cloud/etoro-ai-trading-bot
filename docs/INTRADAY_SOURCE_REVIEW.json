@@ -1,0 +1,122 @@
+[
+  {
+    "name": "yfinance",
+    "url": "https://ranaroussi.github.io/yfinance/",
+    "final_url": "https://ranaroussi.github.io/yfinance/",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:37.414254+00:00",
+    "sha256": "7fd290a8dc757f01c04eff8e6bfb11c87b5d63a6ebe9f1f19a54a1615ebf771f"
+  },
+  {
+    "name": "yfinance-history",
+    "url": "https://ranaroussi.github.io/yfinance/reference/api/yfinance.Ticker.history.html",
+    "final_url": "https://ranaroussi.github.io/yfinance/reference/api/yfinance.Ticker.history.html",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:37.428476+00:00",
+    "sha256": "91083461508aeb3aecc7b82bdf7fa686e64f1c17f39e806a53dbd60da3ca7be4"
+  },
+  {
+    "name": "yfinance-source",
+    "url": "https://raw.githubusercontent.com/ranaroussi/yfinance/main/yfinance/scrapers/history.py",
+    "final_url": "https://raw.githubusercontent.com/ranaroussi/yfinance/main/yfinance/scrapers/history.py",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:37.606025+00:00",
+    "sha256": "063a569905cddc7b7dd93420d05163d1afdae5936bef4beb468bee365c1f9d3a"
+  },
+  {
+    "name": "yahoo-terms",
+    "url": "https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html",
+    "final_url": "https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:38.152128+00:00",
+    "sha256": "4bcdd5402dcb56638165e1566de0c6a980b31a42eb3ab7ff092e1f9dacb2a257"
+  },
+  {
+    "name": "yahoo-finance-terms",
+    "url": "https://legal.yahoo.com/us/en/yahoo/terms/product-atos/finance/index.html",
+    "final_url": "https://legal.yahoo.com/us/en/yahoo/terms/product-atos/finance/index.html",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:38.080235+00:00",
+    "sha256": "189c5b83145a7afbcc4dab999f894ebdcaddcabf14f8c1a76475548223c4957f"
+  },
+  {
+    "name": "alpha-docs",
+    "url": "https://www.alphavantage.co/documentation/",
+    "final_url": "https://www.alphavantage.co/documentation/",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:37.806261+00:00",
+    "sha256": "bcb05823be58a373a0139e9f9eb329d8ca4cf41d0afb44547c8e1125e0c16d0e"
+  },
+  {
+    "name": "alpha-premium",
+    "url": "https://www.alphavantage.co/premium/",
+    "final_url": "https://www.alphavantage.co/premium/",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:37.915135+00:00",
+    "sha256": "030c39e3647c433881fecf3514a7d5456fae8765edaaf31d90c4c72f83e32d6c"
+  },
+  {
+    "name": "stooq",
+    "url": "https://stooq.com/db/h/",
+    "final_url": "https://stooq.com/db/h/",
+    "status": 404,
+    "retrieved_at": "2026-10-27T17:13:38.425459+00:00",
+    "sha256": "03fa6d7ffcac125ba680b7558912f278abec5a5685a4fee3c26a023b32354115"
+  },
+  {
+    "name": "alpaca",
+    "url": "https://docs.alpaca.markets/docs/about-market-data-api",
+    "final_url": "https://docs.alpaca.markets/us/docs/about-market-data-api",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:38.073496+00:00",
+    "sha256": "a319be9fa689d0d700659d53d04d616618243069cd4a4572cda425d4c3568f62"
+  },
+  {
+    "name": "alpaca-bars",
+    "url": "https://docs.alpaca.markets/reference/stockbars",
+    "final_url": "https://docs.alpaca.markets/us/reference/stockbars",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:37.972337+00:00",
+    "sha256": "fade5e59685ff5570696fcae7da2045554435408ac0153d4794bd5360c29df2f"
+  },
+  {
+    "name": "dukascopy",
+    "url": "https://www.dukascopy.com/swiss/english/marketwatch/historical/",
+    "final_url": "https://www.dukascopy.com/swiss/english/marketwatch/historical/",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:39.563529+00:00",
+    "sha256": "90f3519c8fbeee5bc0875c421ab61f82c9cb8d99a0c48e97f54907cc07b2d912"
+  },
+  {
+    "name": "dukascopy-terms",
+    "url": "https://www.dukascopy.com/swiss/english/legal/disclaimer/",
+    "final_url": "https://www.dukascopy.com/swiss/english/legal/disclaimer/",
+    "status": 404,
+    "retrieved_at": "2026-10-27T17:13:38.506107+00:00",
+    "sha256": "c428e9c135265121aa403e9cfe59912958b563fc3e984538b7fc0b0f1e2f44d7"
+  },
+  {
+    "name": "nyse",
+    "url": "https://www.nyse.com/markets/hours-calendars",
+    "final_url": "https://www.nyse.com/markets/hours-calendars",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:13:37.698680+00:00",
+    "sha256": "3960e64cd7c9581c2e7a6d3f602342344eba1fac7b7476d51ddabb32b343fe11"
+  },
+  {
+    "name": "dukascopy-use",
+    "url": "https://www.dukascopy.com/swiss/english/legal-pages/terms-of-use/",
+    "final_url": "https://www.dukascopy.com/swiss/english/legal-pages/terms-of-use/",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:14:55.075632+00:00",
+    "sha256": "0a7c3a2a2364eccb32e382db2647036d0e57dd1437602c8f3d8b9ae717959ad7"
+  },
+  {
+    "name": "dukascopy-disclaimer",
+    "url": "https://www.dukascopy.com/swiss/english/legal-pages/important-disclaimer/",
+    "final_url": "https://www.dukascopy.com/swiss/english/legal-pages/important-disclaimer/",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:14:56.141423+00:00",
+    "sha256": "bb2c0bc86bceeb8538a76385f7d5f4d05d0864b978248b2f24e0e2fddf7d7ba3"
+  }
+]

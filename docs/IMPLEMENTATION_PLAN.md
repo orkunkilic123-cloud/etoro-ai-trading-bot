@@ -121,3 +121,19 @@ cannot be substituted into existing hourly strategies. Future daily strategy sem
 licensed intraday source require explicit design and tests. Intraday vendor adapter, expanded
 calendar coverage, corporate-action portfolio accounting, delisted universe coverage and
 historical event vintages remain dependencies. No execution or risk policy changes.
+
+### Phase 8 — hourly qualification; acquisition and real studies blocked
+
+[Provider review](INTRADAY_DATA.md): Yahoo automated-use permission unverified; Alpha Vantage
+intraday premium; Stooq access/terms unresolved; Alpaca requires account/feed review and private
+authentication; Dukascopy automated collection requires consent and underlying-equity suitability
+is unverified. No qualifying 6–12 month hourly stock/ETF archive was obtained.
+
+Implemented offline normalized-hourly cache import, configurable coverage policy, exact session
+grid checks, point-in-time warm-up for all three strategies and predeclared chronological windows,
+readiness manifests and a coverage gate into the unchanged verified replay path. No remote
+provider adapter or real return figures are claimed. Real runs for EUR 500/1,000 remain blocked.
+
+Next dependencies: licensed exports or separately authorized free account integration; feed,
+corporate-action and calendar review; then an explicit offline hourly fill/expiry/funding contract
+compatible with available observations. Do not manufacture quotes or weaken production risk.
