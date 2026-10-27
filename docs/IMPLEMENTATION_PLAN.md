@@ -68,7 +68,7 @@ Store no credentials in SQLite, logs, reports, command arguments, fixtures or AI
 | 3: Demo execution engine | Exact manual authorization, risk integration, broker eligibility, durable journal and asynchronous reconciliation | Mocked opening/closing, timeouts, partial fills, restart recovery and security; execution disabled by default |
 | 4: market scanner | Verified market-data discovery/history, indicators, transparent scores, budget/cost screening and caching | Mocked contracts, indicator references, data expiry, quota and safety tests; no execution |
 | 5: strategy engine | Deterministic scanner-to-proposal rules, point-in-time evidence, earnings awareness, risk handoff and decision journal | Intraday/swing, look-ahead, affordability, conflict/duplicate, risk integration and exit-advice tests; no execution |
-| 6: supervised demo operation | Previous gates passed; operational limits and documented recovery | Sustained observation, reconciliation drift checks, kill-switch drills and restart tests; measured behavior before expanding scope |
+| 6: independent backtesting | Point-in-time replay, unchanged strategy/risk checks, simulated fills, benchmarks and chronological evaluation | Deterministic timing/gap/cost/risk tests; reproducible labelled reports; real-data validation still required |
 
 Candidate dependencies: standard-library sqlite3, decimal, logging and zoneinfo; httpx for transport; pydantic for schemas; pytest and hypothesis for testing. These are proposals, not installed or pinned yet. Add data-science libraries only when justified. No paid AI/API services or cloud database is required. Local-model resource and license needs must be assessed before adoption.
 
@@ -98,3 +98,10 @@ Remaining integration work: trusted unleveraged-product/currency evidence; excha
 See [STRATEGY_ENGINE.md](STRATEGY_ENGINE.md). Three deterministic long-only strategies consume scanner features with independently timestamped source bars. They produce immutable, expiring proposals; a separate explicit call performs the unchanged RiskEngine review and capacity reservation. Position monitoring produces advice only. Defaults contain no take-profit cap or daily trade quota. Decision journaling persists rejection/miss/proposal/risk/exit events and duplicate claims across restarts.
 
 No broker endpoints, permissions, credentials or dependencies changed. Remaining gates include independently validated strategy performance, historical point-in-time data and revisions, trusted earnings/calendar/product/quantity-step/FX/cost evidence, position risk monitoring, reservation reconciliation, and human approval integration. Learning may propose reviewed versioned changes; it cannot modify production rules or risk controls automatically. Autonomous execution remains disabled.
+
+
+## Phase 6: independent backtesting implementation
+
+See [BACKTESTING.md](BACKTESTING.md). Offline chronological replay uses the existing strategies, ExitMonitor and RiskEngine, with new isolated simulation state only. It models EUR 500/1,000 funding, later-quote partial fills, costs, gaps, cash constraints, daily halts and durable duplicate protection. Reports include benchmarks, undefined-metric handling, data/source/configuration digests and provenance. Training-only selection freezes plans before validation/test; walk-forward test windows are disjoint.
+
+No trustworthy historical archive is available or claimed. Bundled inputs are labelled synthetic, including eligibility, liquidity, sessions and earnings evidence. Real-data validation, corporate actions, multi-instrument allocation and independently calibrated fills remain outstanding. Simulation reservation retirement is not a production release API. Existing trading permissions, credential handling, risk limits and disabled autonomous execution remain unchanged.

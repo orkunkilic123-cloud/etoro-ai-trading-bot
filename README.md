@@ -2,6 +2,7 @@
 
 Python 3.12+ read-only API client, risk engine and opt-in Demo execution coordinator. The read-only client allows only Demo portfolio GET and market rates GET. The original client blocks order routes and Real portfolio routes. A separate, disabled-by-default Demo execution coordinator requires exact manual approval and risk checks; no autonomous trading is implemented.
 
+- [Independent backtesting: replay, evidence, reports and limitations](docs/BACKTESTING.md)
 - [Strategy engine: proposals, risk review, exit advice and learning boundary](docs/STRATEGY_ENGINE.md)
 - [Market scanner: data contracts, indicators, scores and limitations](docs/MARKET_SCANNER.md)
 - [Demo execution: authorization, journal and recovery](docs/DEMO_EXECUTION.md)
@@ -30,3 +31,5 @@ The offline risk engine limits estimated risk to 1% per trade, latches a daily h
 Phase 4 adds an analysis-only market scanner with batched official data routes, completed-bar indicators, explainable opportunity scores, EUR budget/cost screening and persistent caches/quota pacing. Network access defaults off; verified product, calendar, FX and cost evidence are required. Scores never approve orders. Run `python -m pytest tests/test_scanner.py` for the offline scanner suite.
 
 Phase 5 adds deterministic momentum breakout, trend-following and mean-reversion proposals for intraday/short-swing analysis. Point-in-time evidence, earnings coverage, conservative sizing and persistent decision journaling are required. Risk review is explicit; strategy code cannot invoke execution. No profitability claim or autonomous trading is enabled.
+
+Phase 6 adds independent chronological backtesting with the existing strategy/risk engines, isolated simulated accounting, conservative later-quote fills, benchmarks and reproducible reports. Included fixtures are explicitly synthetic and provide no profitability evidence. See the backtesting guide before interpreting any metric.

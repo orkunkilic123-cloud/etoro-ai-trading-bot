@@ -113,3 +113,24 @@ Use the existing environment and pinned dependencies. No keys or broker connecti
 Tests initialize only temporary synthetic journals/accounts and run no authenticated API calls. There is no strategy execution command. See [STRATEGY_ENGINE.md](STRATEGY_ENGINE.md) for library composition and required evidence. Create `.strategy-state` explicitly for a future local analysis journal, separately from `.risk-state`; never reset safety state to clear a duplicate or halt. `Journal.initialize` refuses to overwrite existing files.
 
 Proposal generation is offline and reserves no capacity. Explicit RiskEngine review does reserve local capacity; do not use a real safety database for experiments. Exit results and stop/target levels are advice, never broker instructions. A fresh, verified earnings calendar and product/quantity-step/FX/cost evidence are required; do not substitute invented facts. Rules are immutable versions; Learning Agent suggestions require review before any promotion. Autonomous execution remains disabled.
+
+
+## Phase 6 offline backtesting and synthetic reports
+
+No credentials, market download or new dependencies are needed. These commands run synthetic engineering fixtures only:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_backtest.py
+.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
+.\.venv\Scripts\python.exe -m mypy
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m hatchling build
+.\.venv\Scripts\python.exe -m etoro_demo_bot.backtest --synthetic --eur 500 --output .backtest-output\synthetic-500
+.\.venv\Scripts\python.exe -m etoro_demo_bot.backtest --synthetic --eur 1000 --output .backtest-output\synthetic-1000
+```
+
+Output directories must be new; reruns deliberately refuse to overwrite evidence or safety state. Open `comparison.md` and each strategy's `report.md` locally. JSON, CSV, checksums, complete input archives and isolated simulation journals are also saved. All results are prominently synthetic; do not present them as historical returns or evidence of profitability. No order execution occurs.
+
+See [BACKTESTING.md](BACKTESTING.md) for library input contracts, chronological splits, metrics and data limitations. Keep replay output separate from `.risk-state` and `.strategy-state`; never point experiments at production state. There is no real-data downloader or credential configuration step. Supply independently reviewed historical evidence through the typed Dataset interface before conducting a real-data study.
