@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "etoro-demo-bot"
+version = "0.1.0"
+description = "Read-only eToro Demo API foundation"
+requires-python = ">=3.12"
+dependencies = ["httpx==0.28.1"]
+
+[project.optional-dependencies]
+dev = ["pytest==8.3.5", "ruff==0.11.13", "mypy==1.15.0"]
+
+[project.scripts]
+etoro-demo = "etoro_demo_bot.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]

@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# All local credential variants; only the empty template is tracked.
+.env.*
+!.env.example
+.mypy_cache/
