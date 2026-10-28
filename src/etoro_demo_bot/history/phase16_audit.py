@@ -84,7 +84,9 @@ def audit_symbols(
                 "price_basis": "raw",
                 "expected_regular_bars": expected,
                 "qualified_regular_bars": observed,
-                "structural_coverage": "qualified" if not reason[0].startswith("STRUCTURE") else "blocked",
+                "structural_coverage": (
+                    "qualified" if not reason[0].startswith("STRUCTURE") else "blocked"
+                ),
                 "status": "blocked",
                 "replay_eligible": False,
                 "original_first_known_at": None,
@@ -166,7 +168,9 @@ def write_bundle(directory: Path, report: dict[str, object]) -> dict[str, str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Private, offline multi-symbol evidence audit")
     parser.add_argument("--cache", type=Path, required=True)
-    parser.add_argument("--item", nargs=2, action="append", required=True, metavar=("SYMBOL", "MANIFEST"))
+    parser.add_argument(
+        "--item", nargs=2, action="append", required=True, metavar=("SYMBOL", "MANIFEST")
+    )
     parser.add_argument("--start", type=date.fromisoformat, required=True)
     parser.add_argument("--end", type=date.fromisoformat, required=True)
     parser.add_argument("--audit-at", type=datetime.fromisoformat, required=True)
