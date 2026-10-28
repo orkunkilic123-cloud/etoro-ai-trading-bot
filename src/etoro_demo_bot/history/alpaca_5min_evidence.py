@@ -35,9 +35,13 @@ def evidence_report(
     structural: dict[str, object] | None = None
     try:
         series = qualify_download(
-            archive, manifest, symbol,
-            start=date.fromisoformat(start), end=date.fromisoformat(end),
-            audit_at=audit_at, calendar=NYSE2026(verified_at=calendar_verified_at),
+            archive,
+            manifest,
+            symbol,
+            start=date.fromisoformat(start),
+            end=date.fromisoformat(end),
+            audit_at=audit_at,
+            calendar=NYSE2026(verified_at=calendar_verified_at),
         )
         structural = research_report(series)
     except (ValueError, OSError):
@@ -62,7 +66,8 @@ def evidence_report(
 
 def write_evidence_report(path: Path, report: dict[str, object]) -> None:
     """Never overwrite a prior evidence report, even on another OS."""
-    payload = (json.dumps(report, sort_keys=True, default=str, ensure_ascii=True, indent=2)
-               + "\n").encode("utf-8")
+    payload = (
+        json.dumps(report, sort_keys=True, default=str, ensure_ascii=True, indent=2) + "\n"
+    ).encode("utf-8")
     with path.open("xb") as f:
         f.write(payload)
