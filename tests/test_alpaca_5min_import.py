@@ -1,6 +1,4 @@
 """Offline import security regressions; no credentials or network."""
-import hashlib
-import json
 from datetime import UTC, datetime
 from pathlib import Path
 
