@@ -14,8 +14,8 @@ from etoro_demo_bot.history.alpaca_5min_evidence import (
     evidence_report,
     write_evidence_report,
 )
-from etoro_demo_bot.history.alpaca_5min_import import import_pages
 from etoro_demo_bot.history.alpaca import load_download
+from etoro_demo_bot.history.alpaca_5min_import import import_pages
 from etoro_demo_bot.history.archive import Archive
 from etoro_demo_bot.timeframes import Timeframe
 
