@@ -52,7 +52,8 @@ def test_report_output_exclusive_deterministic_utf8(tmp_path: Path) -> None:
     assert len(first) == 3
     assert b"42" in (output / "evidence.csv").read_bytes()
     assert (output / "evidence.md").read_bytes().endswith(b"\n")
-    assert json.loads((output / "evidence.json").read_text("utf-8"))["execution_authorized"] is False
+    saved = json.loads((output / "evidence.json").read_text("utf-8"))
+    assert saved["execution_authorized"] is False
     with pytest.raises(FileExistsError):
         write_bundle(output, report)
     second = write_bundle(tmp_path / "another", report)
