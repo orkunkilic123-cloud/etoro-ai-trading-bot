@@ -348,3 +348,18 @@ conditional models and blocked evidence. The Monte Carlo comparison has 10,000
 whole-session outcome draws, not 10,000 independent historical observations.
 See [contracts, assumptions and blockers](INTRADAY_REPLAY.md). There is no genuine
 Alpaca download or trading activation in these commands.
+
+## Phase 17 — Offline Demo readiness and first owner read (not automatic)
+
+From a trusted PowerShell checkout, run the **offline** tests without API credentials:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_demo_readiness.py
+.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
+.\.venv\Scripts\python.exe -m mypy
+.\.venv\Scripts\python.exe -m pip check
+```
+
+The separate `etoro-demo check-demo` command is an **authenticated** read-only Demo portfolio GET, never an offline test and never automatic. It requires your explicit opt-in from a trusted local shell and verified **Demo Read** credentials stored privately; never put secrets in GitHub, CI, screenshots, prompts or logs. Before attempting it, follow [Phase 17's minimum owner steps and blockers](PHASE17_DEMO_READINESS.md). This workflow does not authorize or submit orders.

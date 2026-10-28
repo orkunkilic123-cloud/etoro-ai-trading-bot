@@ -110,3 +110,7 @@ availability, usage rights and all real-data replay gates remain blocked pending
 private reproducible JSON, CSV and Markdown reports for complete Alpaca IEX 5Min
 manifests. Genuine ORB/Monte Carlo and portfolio returns remain blocked without
 independently verified original availability, quotes, FX, costs, actions and eligibility.
+
+### Phase 17: Demo read-only preparation (partial)
+
+[Offline readiness gates and owner-operated first-read checklist](docs/PHASE17_DEMO_READINESS.md) provide explicit evidence blockers and a separate future virtual-trade checklist. No authenticated tests or orders were run during implementation. The readiness assessment never grants execution authority; a documented v2/v3 order-endpoint discrepancy remains unresolved. The existing execution coordinator stays disabled by default.
