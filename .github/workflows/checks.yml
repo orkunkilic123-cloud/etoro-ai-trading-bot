@@ -19,7 +19,6 @@ jobs:
       - run: python -m hatchling build
       - run: python -m pytest
       - run: python -m ruff check .
-      - run: python -m ruff format --diff src/etoro_demo_bot/history/alpaca_5min_import.py
       - run: python -m ruff format --check .
       - run: python -m mypy
       - run: python -m etoro_demo_bot.backtest.intraday.benchmark
