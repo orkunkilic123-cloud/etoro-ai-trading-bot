@@ -88,3 +88,23 @@ the CLI does not expose transport injection.
 Platform contracts consulted: Cloud Environment Runtime's networking.md and Cloud Environment
 Onboarding's onboarding.md, available through the installed Codex Cloud plugins. These document
 the sidecar proxy, destination-bound placeholder substitution, runtime readiness and publication.
+
+
+## Offline query preparation
+
+Use the query preview before configuring credentials or enabling downloads:
+
+```bash
+python -m etoro_demo_bot.alpaca --dry-run --symbols IBM --start 2026-03-01T00:00:00Z --end 2026-03-02T00:00:00Z
+```
+
+This validates the query and prints the fixed GET destination and normalized parameters.
+It does not load credentials, construct a client, inspect proxy settings, create a cache,
+or send requests. `--dry-run` and `--enable-network` are mutually exclusive. Invalid
+queries fail with the same sanitized CLI error as downloads. A successful preview does
+not verify account entitlements, free access, completed historical hours, coverage or
+replay readiness; those checks still apply to an explicitly enabled future download.
+
+The historical bars contract was reviewed on 2026-10-28 against the official reference:
+https://docs.alpaca.markets/us/reference/stockbars . The existing route, hourly timeframe,
+inclusive bounds, IEX feed and pagination parameters remain applicable.
