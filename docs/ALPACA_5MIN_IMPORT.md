@@ -90,3 +90,17 @@ observations by source classification **and independent evidence**, not by chang
 The present implementation does not include a first authenticated 5Min read command:
 the existing client still prohibits it. That requires additional reviewed changes.
 No paid services, execution routes or unattended network activity are enabled.
+
+## Phase 15 blocked-outcome evidence report
+
+`etoro_demo_bot.history.alpaca_5min_evidence.evidence_report` uses the existing
+offline 2026 five-minute structural validator and produces a fail-closed,
+machine-readable `alpaca-iex-5min-evidence-v1` report. The status remains `blocked`
+until original publication/revision availability, redistribution/retention rights,
+corporate actions, quotes/liquidity, costs/slippage, time-appropriate FX, eToro
+instrument eligibility, and point-in-time earnings are independently documented.
+The report deliberately writes `original_first_known_at=null`, `returns=null`,
+`eur_500=null`, `eur_1000=null` and `execution_authorized=false`. Structural
+qualification alone cannot unlock Phase 14 replay. The `write_evidence_report`
+helper uses exclusive output creation and UTF-8/LF JSON. This is a conservative
+baseline pending a reviewed evidence-supply and attestation interface.
