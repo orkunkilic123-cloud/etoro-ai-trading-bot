@@ -3,7 +3,7 @@
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlencode, urlsplit
 
 from ..history.models import Source
 from ..history.providers import stamp
@@ -41,6 +41,12 @@ class BarsQuery:
             or self.version != "alpaca-bars-v1"
         ):
             raise ValueError("Invalid Alpaca hourly query.")
+
+    def source_url(self, cursor: str | None = None) -> str:
+        params = self.params()
+        if cursor is not None:
+            params["page_token"] = cursor
+        return ORIGIN + BARS + "?" + urlencode(params)
 
     def params(self) -> dict[str, str]:
         return {
