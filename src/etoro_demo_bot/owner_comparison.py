@@ -26,7 +26,10 @@ def _money(value: str) -> Decimal:
         result = Decimal(value)
     except InvalidOperation:
         raise ComparisonUnavailable("Invalid comparison amount") from None
-    if not result.is_finite() or result < 0 or -12 > result.as_tuple().exponent:
+    if not result.is_finite() or result < 0:
+        raise ComparisonUnavailable("Invalid comparison amount")
+    exponent = result.as_tuple().exponent
+    if not isinstance(exponent, int) or exponent < -12:
         raise ComparisonUnavailable("Invalid comparison amount")
     return result
 
