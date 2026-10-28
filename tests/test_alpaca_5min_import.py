@@ -3,8 +3,11 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+import httpx
 import pytest
 
+from etoro_demo_bot.alpaca.client import MarketDataClient
+from etoro_demo_bot.alpaca.config import Credentials, DataError
 from etoro_demo_bot.alpaca.contracts import BarsQuery
 from etoro_demo_bot.history.alpaca_5min_evidence import (
     MANDATORY,
@@ -12,6 +15,7 @@ from etoro_demo_bot.history.alpaca_5min_evidence import (
     write_evidence_report,
 )
 from etoro_demo_bot.history.alpaca_5min_import import import_pages
+from etoro_demo_bot.history.alpaca import load_download
 from etoro_demo_bot.history.archive import Archive
 from etoro_demo_bot.timeframes import Timeframe
 
@@ -115,3 +119,57 @@ def test_evidence_report_missing_manifest_blocks_without_trades(tmp_path: Path) 
     with pytest.raises(FileExistsError):
         write_evidence_report(output, report)
     assert output.read_bytes() == first
+
+
+def test_owner_5min_read_only_opt_in_and_private_manifest(tmp_path: Path) -> None:
+    queries: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        queries.append(request)
+        assert request.method == "GET"
+        assert request.url.path == "/v2/stocks/bars"
+        assert request.url.params["timeframe"] == "5Min"
+        assert request.url.params["feed"] == "iex"
+        return httpx.Response(
+            200,
+            json={
+                "bars": {
+                    "IBM": [
+                        {
+                            "t": "2026-03-09T14:00:00Z",
+                            "o": 100,
+                            "h": 101,
+                            "l": 99,
+                            "c": 100,
+                            "v": 10,
+                        }
+                    ]
+                },
+                "next_page_token": None,
+            },
+        )
+
+    archive = Archive(tmp_path / "private.sqlite")
+    synthetic_keys = Credentials("SYNTHETIC_KEY", "SYNTHETIC_SECRET")
+    kwargs = {
+        "enabled": True,
+        "transport": httpx.MockTransport(handler),
+        "clock": lambda: datetime(2026, 10, 28, tzinfo=UTC).timestamp(),
+        "request_limit": 1,
+    }
+    with MarketDataClient(synthetic_keys, archive, **kwargs) as client:
+        with pytest.raises(DataError, match="owner opt-in"):
+            client.fetch(query())
+    assert not queries
+    with MarketDataClient(
+        synthetic_keys,
+        archive,
+        allow_five_minute=True,
+        **kwargs,
+    ) as client:
+        manifest = client.fetch(query())
+    assert len(queries) == 1
+    history = load_download(archive, manifest, "IBM", exchange="XNYS")
+    assert history.source.provider == "alpaca-iex-download-5min-v1"
+    assert history.bars[0].known_at.year == 2026
+    assert b"SYNTHETIC_SECRET" not in archive.path.read_bytes()
