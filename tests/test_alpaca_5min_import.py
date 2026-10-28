@@ -111,7 +111,9 @@ def test_evidence_report_missing_manifest_blocks_without_trades(tmp_path: Path) 
     assert report["execution_authorized"] is False
     assert report["returns"] is None
     assert report["original_first_known_at"] is None
-    assert len(report["blockers"]) == 1 + len(MANDATORY)
+    blockers = report["blockers"]
+    assert isinstance(blockers, list)
+    assert len(blockers) == 1 + len(MANDATORY)
     output = tmp_path / "report.json"
     write_evidence_report(output, report)
     first = output.read_bytes()
