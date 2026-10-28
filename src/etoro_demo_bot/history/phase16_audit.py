@@ -115,15 +115,20 @@ def _outputs(report: dict[str, object]) -> tuple[bytes, bytes, bytes]:
     assert isinstance(rows, list)
     raw = (json.dumps(report, sort_keys=True, indent=2, ensure_ascii=True) + "\n").encode("utf-8")
     buffer = io.StringIO(newline="")
-    fields = ("symbol", "manifest", "status", "structural_coverage", "expected_regular_bars",
-              "qualified_regular_bars", "replay_eligible", "blockers")
+    fields = (
+        "symbol",
+        "manifest",
+        "status",
+        "structural_coverage",
+        "expected_regular_bars",
+        "qualified_regular_bars",
+        "replay_eligible",
+        "blockers",
+    )
     writer = csv.writer(buffer, lineterminator="\n")
     writer.writerow(fields)
     for row in rows:
-        writer.writerow([
-            row[k] if k != "blockers" else ";".join(row[k])
-            for k in fields
-        ])
+        writer.writerow([row[k] if k != "blockers" else ";".join(row[k]) for k in fields])
     csv_bytes = buffer.getvalue().encode("utf-8")
     md = [
         "# Phase 16 — Alpaca IEX 5Min evidence audit",
@@ -142,10 +147,15 @@ def _outputs(report: dict[str, object]) -> tuple[bytes, bytes, bytes]:
     md.extend(["", "## Missing independent evidence", ""])
     for item in REQUIRED:
         md.append(f"- {item.replace('_', ' ')}")
-    md.extend(["", "Raw hashes authenticate stored bytes, not original provider publication.",
-               "IEX is venue-specific, not consolidated volume or executable eToro pricing.",
-               "Blocked: ORB replay, 10,000-draw MC, cash/buy-and-hold and EUR 500/1,000 results.",
-               ""])
+    md.extend(
+        [
+            "",
+            "Raw hashes authenticate stored bytes, not original provider publication.",
+            "IEX is venue-specific, not consolidated volume or executable eToro pricing.",
+            "Blocked: ORB replay, 10,000-draw MC, cash/buy-and-hold and EUR 500/1,000 results.",
+            "",
+        ]
+    )
     return raw, csv_bytes, "\n".join(md).encode("utf-8")
 
 
