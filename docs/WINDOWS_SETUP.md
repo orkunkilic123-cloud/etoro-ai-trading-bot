@@ -286,3 +286,19 @@ keys in a shell. Leave ALPACA_DATA_CODEX_PROXY_REQUIRED unset/false for local Wi
 TLS verification uses the system trust store, or explicitly configured SSL_CERT_FILE /
 SSL_CERT_DIR. Do not set these to untrusted bundles. Cloud proxy routing is not inherited
 on local Windows: an arbitrary HTTPS_PROXY is not an approved Codex proxy.
+
+## Phase 11: offline Monte Carlo demo
+
+No credentials or networking are needed. Choose new output directories; never point these commands
+at existing production safety state. Each command runs 10,000 reproducible synthetic outcomes:
+
+```powershell
+python -m etoro_demo_bot.monte_carlo --output .backtest-output/mc-500-seed19 --eur 500 --seed 19
+python -m etoro_demo_bot.monte_carlo --output .backtest-output/mc-1000-seed19 --eur 1000 --seed 19
+python -m pytest -q tests/test_monte_carlo.py
+```
+
+Each output contains separate synthetic risk/strategy databases and report/report.md,
+report/report.json, report/trials.csv and report/checksums.json. Existing directories are rejected.
+These results are software fixtures, not historical performance or investment recommendations.
+See [Monte Carlo model, license review and limitations](MONTE_CARLO.md). No order is enabled.

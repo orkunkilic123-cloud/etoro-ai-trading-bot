@@ -150,3 +150,16 @@ and a free Basic plan is not verified account or symbol coverage. Missing/action
 IEX-only volume, native hourly alignment and existing quote/FX/eligibility requirements still gate
 EUR 500/1,000 backtests. A future small read requires separate authorization; no trading endpoint,
 paid subscription, risk relaxation or autonomous execution was added.
+
+### Phase 11 — offline Monte Carlo Simulation Agent
+
+Implemented 10,000 seeded whole-block conditional outcomes after the unchanged strategy/risk
+review, for EUR 500/1,000. Includes gap-through-stop losses, optional targets, spread/slippage/
+commission/FX attribution, empirical tail metrics, complete deterministic trial reports and
+synthetic integration tests for all three strategies. [Reference/license review and model
+limitations](MONTE_CARLO.md). No order execution or production risk changes.
+
+Historical qualification remains blocked; only clearly labelled synthetic pools are admitted.
+This is a single-candidate conditional stress tool, not sequential portfolio simulation or proof
+of profitable strategy performance. Next dependency: point-in-time data and execution-model
+validation against held-out event-driven backtests before any predictive interpretation.
