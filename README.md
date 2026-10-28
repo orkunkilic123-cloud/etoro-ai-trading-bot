@@ -96,3 +96,10 @@ python -m etoro_demo_bot.backtest.intraday --output .historical-data/orb-synthet
 Genuine-data metrics remain blocked without original availability, coverage and
 usage-rights evidence. Synthetic and conditional research do not establish eToro
 profitability or authorize trading. The hourly baseline remains unchanged.
+
+### Phase 15: private Alpaca five-minute evidence intake (partial)
+
+An [offline owner-supplied exact-byte importer](docs/ALPACA_5MIN_IMPORT.md) now validates
+native 5Min IEX pages and pagination against the existing immutable SQLite archive.
+This is **not** an authenticated download or genuine ORB replay enablement. Historical
+availability, usage rights and all real-data replay gates remain blocked pending evidence.
