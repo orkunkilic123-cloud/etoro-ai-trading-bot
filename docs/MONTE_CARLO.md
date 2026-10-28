@@ -148,3 +148,13 @@ Next: qualify licensed point-in-time historical blocks and historical execution 
 against held-out event-driven backtests, test regime/volume/session stratification and liquidity/
 partial-fill stress, and independently assess calibration. Any future learned changes require
 human review and must not modify risk ceilings or execution permissions.
+
+## Phase 14: separate intraday outcome comparisons
+
+The original Agent/Pool interfaces above remain unchanged and synthetic-only.
+`monte_carlo.intraday.compare` separately bootstraps 10,000 prior single-session ORB
+replay outcomes with frozen cost/risk assumptions, chronological separation, explicit
+evidence classification and no open inventory. This resamples completed outcomes,
+not new price paths or evolving-equity portfolio risk admissions. See
+[INTRADAY_REPLAY.md](INTRADAY_REPLAY.md) for the precise gate, tail metrics, limitations
+and offline synthetic commands. No genuine dataset was used in Phase 14.

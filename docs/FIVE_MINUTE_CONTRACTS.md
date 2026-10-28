@@ -164,3 +164,11 @@ full-session archive qualification path, permit five-minute input into hourly
 strategies/backtests, or establish original historical availability. Proposals carry
 session deadlines and provenance for a future qualified replay adapter, with no
 execution authority.
+
+## Phase 14 independent replay adapter
+
+[Intraday replay](INTRADAY_REPLAY.md) revalidates complete five-minute sessions and
+consumes only point-in-time visible prefixes through the separate ORB facade. It
+preserves original availability/source metadata and all critical historical blockers.
+Hourly Dataset, Alpaca parser/network gates and original Monte Carlo Pool are unchanged.
+Historical execution assumptions must be explicit; no genuine-data result is supplied.

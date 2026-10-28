@@ -116,3 +116,11 @@ no-trade baselines with the existing risk rules, then add seeded Monte Carlo
 comparisons of qualified replay outcomes. Obtain genuine data only through a
 separately user-activated read-only workflow; do not relax provenance to make a
 historical backtest pass. No trading activation is included in this phase.
+
+## Phase 14 replay consumer
+
+[INTRADAY_REPLAY.md](INTRADAY_REPLAY.md) now provides a separate evidence-gated
+consumer of these proposals, with later-observation fills, costs, partial/gap exits,
+chronological evaluation and Monte Carlo outcome comparisons. The Phase 13 proposal
+rules and authority boundary remain unchanged. The new consumer does not establish
+original availability for ordinary later downloads or verified eToro profitability.

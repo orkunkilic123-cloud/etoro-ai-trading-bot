@@ -82,3 +82,17 @@ The separate five-minute research interface now supports long-only opening-range
 breakout proposals and explicit Risk Manager review, with no execution authority.
 See [ORB rules, evidence requirements and offline validation](docs/ORB_RESEARCH.md).
 Hourly strategy behavior remains unchanged; synthetic tests do not establish returns.
+
+### Intraday ORB replay and Monte Carlo (Phase 14)
+
+[Evidence-gated intraday replay](docs/INTRADAY_REPLAY.md) adds delayed conservative
+fills, partial/gap exits, costs/FX, unchanged risk checks, chronological evaluation
+and a separate 10,000-draw session-outcome bootstrap. Run the offline synthetic demo:
+
+```bash
+python -m etoro_demo_bot.backtest.intraday --output .historical-data/orb-synthetic-500 --eur 500 --seed 19
+```
+
+Genuine-data metrics remain blocked without original availability, coverage and
+usage-rights evidence. Synthetic and conditional research do not establish eToro
+profitability or authorize trading. The hourly baseline remains unchanged.
