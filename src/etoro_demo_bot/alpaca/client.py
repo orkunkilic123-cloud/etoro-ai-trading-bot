@@ -144,10 +144,11 @@ class MarketDataClient:
                 for value in (self._credentials.key, self._credentials.secret)
             ):
                 raise DataError("Market-data response failed secret-exposure guard.")
+            provider = "alpaca-iex-hourly"
+            if query.timeframe is Timeframe.FIVE_MINUTES:
+                provider = "alpaca-iex-5min-v1"
             source = Source(
-                "alpaca-iex-5min-v1"
-                if query.timeframe is Timeframe.FIVE_MINUTES
-                else "alpaca-iex-hourly",
+                provider,
                 url,
                 TERMS,
                 datetime.fromtimestamp(self._clock(), UTC),
@@ -206,9 +207,7 @@ class MarketDataClient:
             ids.append(self._archive.put(raw, source))
             if next_token is None:
                 if query.timeframe is Timeframe.FIVE_MINUTES:
-                    return archive_research_pages(
-                        self._archive, tuple(ids), query.symbols[0]
-                    )
+                    return archive_research_pages(self._archive, tuple(ids), query.symbols[0])
                 manifest = json.dumps(
                     {
                         "schema": "alpaca-iex-download-v1",
