@@ -9,12 +9,12 @@ import pytest
 from etoro_demo_bot.alpaca.client import MarketDataClient
 from etoro_demo_bot.alpaca.config import Credentials, DataError
 from etoro_demo_bot.alpaca.contracts import BarsQuery
+from etoro_demo_bot.history.alpaca import load_download
 from etoro_demo_bot.history.alpaca_5min_evidence import (
     MANDATORY,
     evidence_report,
     write_evidence_report,
 )
-from etoro_demo_bot.history.alpaca import load_download
 from etoro_demo_bot.history.alpaca_5min_import import import_pages
 from etoro_demo_bot.history.archive import Archive
 from etoro_demo_bot.timeframes import Timeframe
