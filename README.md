@@ -103,3 +103,10 @@ An [offline owner-supplied exact-byte importer](docs/ALPACA_5MIN_IMPORT.md) now 
 native 5Min IEX pages and pagination against the existing immutable SQLite archive.
 This is **not** an authenticated download or genuine ORB replay enablement. Historical
 availability, usage rights and all real-data replay gates remain blocked pending evidence.
+
+### Phase 16: offline multi-symbol five-minute evidence audit
+
+[Evidence qualification and owner workflow](docs/PHASE16_EVIDENCE.md) generates
+private reproducible JSON, CSV and Markdown reports for complete Alpaca IEX 5Min
+manifests. Genuine ORB/Monte Carlo and portfolio returns remain blocked without
+independently verified original availability, quotes, FX, costs, actions and eligibility.
