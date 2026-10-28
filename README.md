@@ -68,3 +68,6 @@ Phase 11 adds an [offline Monte Carlo Simulation Agent](docs/MONTE_CARLO.md): 10
 conditional outcomes per risk-reviewed strategy candidate, with gap/cost modeling and tail-risk
 reports for EUR 500/1,000. Only synthetic research pools are currently admitted; no profitability
 claim or execution authorization is produced. [Windows demo commands](docs/WINDOWS_SETUP.md).
+
+For the owner-operated first read, direct manifest audit and remaining historical replay blockers,
+see [Alpaca first read and readiness](docs/ALPACA_FIRST_READ.md).

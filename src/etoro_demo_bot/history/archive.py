@@ -14,7 +14,23 @@ from .providers import check_source
 
 
 class Archive:
+    @classmethod
+    def open_readonly(cls, path: Path) -> "Archive":
+        """Inspect an existing archive without creating directories, tables or files."""
+        archive = cls.__new__(cls)
+        archive.path = path.resolve()
+        archive._readonly = True
+        with closing(archive._connect()) as db:
+            db.execute("SELECT id FROM snapshots LIMIT 0")
+        return archive
+
+    def _connect(self) -> sqlite3.Connection:
+        if self._readonly:
+            return sqlite3.connect(self.path.as_uri() + "?mode=ro", uri=True)
+        return sqlite3.connect(self.path)
+
     def __init__(self, path: Path) -> None:
+        self._readonly = False
         path.parent.mkdir(parents=True, exist_ok=True)
         self.path = path
         with closing(sqlite3.connect(path)) as db:
@@ -24,6 +40,8 @@ class Archive:
             )
 
     def put(self, raw: bytes, source: Source) -> str:
+        if self._readonly:
+            raise ValueError("Historical archive is read-only.")
         check_source(raw, source)
         metadata = json.dumps(asdict(source), default=str, sort_keys=True)
         identity = hashlib.sha256(metadata.encode() + raw).hexdigest()
@@ -35,7 +53,7 @@ class Archive:
         return identity
 
     def get(self, identity: str) -> tuple[bytes, Source]:
-        with closing(sqlite3.connect(self.path)) as db:
+        with closing(self._connect()) as db:
             row = db.execute(
                 "SELECT metadata, raw FROM snapshots WHERE id=?", (identity,)
             ).fetchone()

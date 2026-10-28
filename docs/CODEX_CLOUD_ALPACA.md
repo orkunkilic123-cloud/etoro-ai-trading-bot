@@ -108,3 +108,7 @@ replay readiness; those checks still apply to an explicitly enabled future downl
 The historical bars contract was reviewed on 2026-10-28 against the official reference:
 https://docs.alpaca.markets/us/reference/stockbars . The existing route, hourly timeframe,
 inclusive bounds, IEX feed and pagination parameters remain applicable.
+
+For an owner-operated one-GET test (`--request-limit 1`), direct offline manifest audit,
+Codespaces considerations and the EUR 500/1,000 evidence checklist, see
+[ALPACA_FIRST_READ.md](ALPACA_FIRST_READ.md). No authenticated CI job is provided.

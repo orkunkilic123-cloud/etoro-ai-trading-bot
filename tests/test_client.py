@@ -139,7 +139,13 @@ def test_blocked_query(params: dict[str, str]) -> None:
 
 @pytest.mark.parametrize("ids", [[], [0], [-1], [True], list(range(1, 1002))])
 def test_invalid_ids(ids: list[int]) -> None:
-    with DemoClient(credentials()) as client, pytest.raises(ApiError):
+    with (
+        DemoClient(
+            credentials(),
+            transport=httpx.MockTransport(lambda r: pytest.fail("Unexpected dispatch")),
+        ) as client,
+        pytest.raises(ApiError),
+    ):
         client.rates(ids)
 
 
@@ -299,7 +305,13 @@ def test_cli_missing_config_is_sanitized(
 
 
 def test_portfolio_query_override_blocked() -> None:
-    with DemoClient(credentials()) as client, pytest.raises(EndpointBlocked):
+    with (
+        DemoClient(
+            credentials(),
+            transport=httpx.MockTransport(lambda r: pytest.fail("Unexpected dispatch")),
+        ) as client,
+        pytest.raises(EndpointBlocked),
+    ):
         client.request("GET", PORTFOLIO, params={"mode": "real"})
 
 

@@ -24,6 +24,13 @@ def main() -> int:
     parser.add_argument("--end", required=True, help="Inclusive aware bar-start timestamp")
     parser.add_argument("--adjustment", choices=("raw", "split"), default="raw")
     parser.add_argument("--cache", type=Path, default=Path(".historical-data/alpaca.sqlite"))
+    parser.add_argument(
+        "--request-limit",
+        type=int,
+        choices=(1, 3, 30, 300),
+        default=300,
+        help="Total GET budget including retries and pages; use 1 for the first read-only test",
+    )
     args = parser.parse_args()
     if not args.enable_network and not args.dry_run:
         parser.error(
@@ -38,7 +45,9 @@ def main() -> int:
             return 0
         credentials = Credentials.from_environment()
         archive = Archive(args.cache)
-        with MarketDataClient(credentials, archive, enabled=True) as client:
+        with MarketDataClient(
+            credentials, archive, enabled=True, request_limit=args.request_limit
+        ) as client:
             identity = client.fetch(query)
     except (DataError, ValueError, OSError, sqlite3.Error):
         failed = True
