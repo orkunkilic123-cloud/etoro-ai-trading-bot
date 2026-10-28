@@ -63,3 +63,8 @@ unverified. See [Windows setup](docs/WINDOWS_SETUP.md) for local configuration a
 Codex Cloud Alpaca downloads support destination-scoped Network Secrets through the approved
 proxy with verified TLS. See [cloud configuration](docs/CODEX_CLOUD_ALPACA.md); network access
 remains opt-in and account access has not been verified.
+
+Phase 11 adds an [offline Monte Carlo Simulation Agent](docs/MONTE_CARLO.md): 10,000 seeded
+conditional outcomes per risk-reviewed strategy candidate, with gap/cost modeling and tail-risk
+reports for EUR 500/1,000. Only synthetic research pools are currently admitted; no profitability
+claim or execution authorization is produced. [Windows demo commands](docs/WINDOWS_SETUP.md).
