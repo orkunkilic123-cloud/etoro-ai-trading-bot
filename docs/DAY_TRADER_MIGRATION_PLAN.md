@@ -347,3 +347,11 @@ with a separate code review and test report.
 [B-mc]: https://github.com/orkunkilic123-cloud/etoro-ai-trading-bot/blob/a2f74dbbac5410be5edd97af549442f1e0bcdb29/src/etoro_demo_bot/monte_carlo/models.py
 [B-journal]: https://github.com/orkunkilic123-cloud/etoro-ai-trading-bot/blob/a2f74dbbac5410be5edd97af549442f1e0bcdb29/src/etoro_demo_bot/strategy/journal.py
 [D-license]: https://github.com/Jakeschincariol/day-trader-skill/blob/3d0f4ef6986f4984b7c6bd46f7ff4f87744c3abd/LICENSE
+
+## Phase 13 implementation status
+
+The [15-minute ORB research contract](ORB_RESEARCH.md) implements the approved first
+strategy as separate proposal-only interfaces over completed five-minute bars.
+Hourly engines and execution safeguards remain in place. Genuine-data replay,
+fill/cost modeling and Monte Carlo comparisons remain subsequent evidence-gated
+work; this implementation is not approval to trade.

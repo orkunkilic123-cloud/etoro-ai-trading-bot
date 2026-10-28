@@ -155,3 +155,12 @@ leverage or execution-policy code is changed. No ORB strategy or performance res
 Recommended next phase: a separately reviewed completed-bar 15-minute ORB **research**
 consumer over qualified five-minute contracts, with explicit information-availability tests
 and unchanged risk handoff. Genuine performance evaluation must wait for the evidence above.
+
+## Phase 13 proposal consumer
+
+[ORB research](ORB_RESEARCH.md) consumes a contiguous point-in-time five-minute
+session prefix through a separate Strategy Engine facade. It does not change the
+full-session archive qualification path, permit five-minute input into hourly
+strategies/backtests, or establish original historical availability. Proposals carry
+session deadlines and provenance for a future qualified replay adapter, with no
+execution authority.

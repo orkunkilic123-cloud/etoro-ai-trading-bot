@@ -6,6 +6,7 @@ from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from decimal import ROUND_DOWN, ROUND_UP, Decimal, DecimalException, localcontext
 from decimal import Context as DecimalContext
+from typing import TYPE_CHECKING
 
 from ..risk.engine import RiskEngine
 from ..risk.models import AccountSnapshot, Decision, Proposal, identifier, money
@@ -25,6 +26,9 @@ from .models import (
     Style,
 )
 from .rules import matches, regime
+
+if TYPE_CHECKING:
+    from .orb import OrbContext, OrbOutcome, OrbProposal, OrbRules
 
 D = Decimal
 PRECISION = D("0.000000000001")
@@ -373,3 +377,19 @@ class StrategyEngine:
             return RiskReview(decision, candidate.proposal)
         except (sqlite3.Error, OSError, StrategyError):
             return RiskReview(rejected, candidate.proposal)
+
+    def propose_orb(
+        self, context: "OrbContext", *, now: datetime, rules: "OrbRules | None" = None
+    ) -> "OrbOutcome":
+        """Separate five-minute research entry; the hourly propose path stays unchanged."""
+        from .orb import OrbResearchEngine
+
+        return OrbResearchEngine(self.journal, self.rules).propose(context, now=now, rules=rules)
+
+    def review_orb(
+        self, candidate: "OrbProposal", context: "OrbContext", risk: RiskEngine, *, now: datetime
+    ) -> RiskReview:
+        """Explicit risk-only handoff; never create a broker Candidate or Ticket."""
+        from .orb import OrbResearchEngine
+
+        return OrbResearchEngine(self.journal, self.rules).review(candidate, context, risk, now=now)
