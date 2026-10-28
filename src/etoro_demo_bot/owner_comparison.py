@@ -32,8 +32,11 @@ def _money(value: str) -> Decimal:
 
 
 def compare_demo_observations(
-    *, api_available_cash: str, interface_available_cash: str,
-    api_position_count: int, interface_position_count: int,
+    *,
+    api_available_cash: str,
+    interface_available_cash: str,
+    api_position_count: int,
+    interface_position_count: int,
 ) -> OwnerComparison:
     """Check synthetic or manually reviewed values; never authorize orders."""
     if (
