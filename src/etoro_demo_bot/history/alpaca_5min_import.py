@@ -6,9 +6,8 @@ import json
 import re
 from datetime import UTC, datetime
 from pathlib import Path
-from urllib.parse import urlencode
 
-from ..alpaca.contracts import BARS, ORIGIN, TERMS, BarsQuery
+from ..alpaca.contracts import TERMS, BarsQuery
 from ..timeframes import Timeframe
 from .alpaca import archive_research_pages, decode_page
 from .archive import Archive
@@ -40,7 +39,6 @@ def import_pages(
         or len(query.symbols) != 1
         or not 1 <= len(page_files) <= MAX_PAGES
         or len(page_files) != len(cursor_tokens)
-        or cursor_tokens[0] is not None
         or retrieved_at.tzinfo is None
         or retrieved_at.utcoffset() is None
         or not rights_note.strip()
@@ -66,12 +64,9 @@ def import_pages(
         raw = path.read_bytes()
         if not raw or len(raw) > MAX_PAGE_BYTES:
             raise ValueError("INVALID_PAGE_SIZE")
-        params = query.params()
-        if cursor is not None:
-            params["page_token"] = cursor
         source = Source(
             "alpaca-iex-5min-v1",
-            ORIGIN + BARS + "?" + urlencode(params),
+            query.source_url(cursor),
             TERMS,
             retrieved_at.astimezone(UTC),
             hashlib.sha256(raw).hexdigest(),
