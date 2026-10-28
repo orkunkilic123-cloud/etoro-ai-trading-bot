@@ -25,7 +25,7 @@ class DemoCashObservation:
 
 
 def _amount(value: Any) -> Decimal:
-    if isinstance(value, bool) or not isinstance(value, (str, int, Decimal)):
+    if isinstance(value, bool) or not isinstance(value, str | int | Decimal):
         raise IncompleteDemoSnapshot("Invalid amount")
     try:
         number = Decimal(value)
