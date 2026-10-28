@@ -1,0 +1,13 @@
+{
+  "start": "2026-03-09",
+  "end": "2026-03-13",
+  "train_at": "2026-03-09T00:00:00Z",
+  "validation_at": "2026-03-10T00:00:00Z",
+  "test_at": "2026-03-11T00:00:00Z",
+  "finish_at": "2026-03-13T00:00:00Z",
+  "audit_at": "2026-10-28T13:00:00Z",
+  "calendar_verified_at": "2026-10-28T13:00:00Z",
+  "exchange": "XNYS",
+  "currency": "USD",
+  "basis": "raw"
+}

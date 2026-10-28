@@ -30,10 +30,14 @@ class MarketDataClient:
         archive: Archive,
         *,
         enabled: bool = False,
+        request_limit: int = 300,
         transport: httpx.BaseTransport | None = None,
         clock: Callable[[], float] = time.time,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
+        if type(request_limit) is not int or not 1 <= request_limit <= 300:
+            raise DataError("Market-data request budget must be between 1 and 300.")
+        self._remaining_requests = request_limit
         self._credentials, self._archive, self._enabled = credentials, archive, enabled is True
         self._clock, self._sleep = clock, sleep
         self._quota = ScanStore(archive.path)
@@ -79,7 +83,10 @@ class MarketDataClient:
             headers = httpx.Headers()
             url = ""
             try:
+                if self._remaining_requests == 0:
+                    raise DataError("Market-data request budget exhausted; no further GET allowed.")
                 self._wait()
+                self._remaining_requests -= 1
                 with self._http.stream(
                     "GET",
                     ORIGIN + BARS,
