@@ -109,8 +109,12 @@ def main() -> int:
         )
     except (ValueError, OSError):
         parser.error("Import blocked: invalid pages, source metadata or pagination")
-    print(json.dumps({"status": "imported_not_qualified", "manifest": manifest,
-                      "execution_authorized": False}, sort_keys=True))
+    print(
+        json.dumps(
+            {"status": "imported_not_qualified", "manifest": manifest, "execution_authorized": False},
+            sort_keys=True,
+        )
+    )
     return 0
 
 
