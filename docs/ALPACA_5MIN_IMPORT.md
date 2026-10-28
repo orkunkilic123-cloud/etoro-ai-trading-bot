@@ -1,9 +1,10 @@
 # Phase 15 — owner-operated Alpaca 5Min evidence intake (initial implementation)
 
-**Status: offline intake implemented; authenticated 5Min download and genuine ORB replay remain blocked.**
+**Status: owner-opt-in read-only 5Min acquisition and offline intake implemented; genuine ORB replay remains blocked.**
 
-The existing Alpaca client intentionally refuses authenticated 5Min requests. Do not bypass
-that guard with a modified client or submit credentials to ChatGPT. This phase adds an
+The existing Alpaca client still rejects authenticated 5Min requests by default.
+A separate explicit owner opt-in enables only the previously allowlisted IEX stock-bars GET.
+Do not submit credentials to ChatGPT. This phase adds an
 offline importer for original pages already lawfully acquired by the owner, using the
 existing immutable SQLite Archive, strict native 5Min parser, pagination-chain verifier
 and `archive_research_pages`. No data are included in the repository.
@@ -87,8 +88,22 @@ observations by source classification **and independent evidence**, not by chang
    USD/EUR conversion, fees/spreads, symbol eligibility, session calendar and
    sufficient coverage. Otherwise real replay and EUR 500/1,000 comparisons stay blocked.
 
-The present implementation does not include a first authenticated 5Min read command:
-the existing client still prohibits it. That requires additional reviewed changes.
+The owner can perform the first bounded historical read locally after reviewing Basic
+entitlement, account permissions and private retention terms. Never run the command in
+ChatGPT Work or submit keys here. Use an already configured local Alpaca data-only
+environment. The example requests March 2026 history, not recent candles:
+
+```powershell
+python -m etoro_demo_bot.alpaca --enable-network --enable-five-minute --timeframe 5Min --symbols IBM --start 2026-03-09T00:00:00Z --end 2026-03-10T00:00:00Z --adjustment raw --request-limit 1 --cache .historical-data/alpaca.sqlite
+```
+
+The first invocation is intentionally limited to **one GET including any retries**;
+if pagination remains incomplete, the command fails closed with no completed
+manifest. A reviewed follow-up may use a larger budget, at most 30 requests per
+invocation, but should not reissue overlapping reads without reviewing provider
+entitlement and retained partial snapshots. Credentials are loaded only after the
+explicit network flags and validated query; the response is archived locally.
+The download is not proof of original availability or broker-executable prices.
 No paid services, execution routes or unattended network activity are enabled.
 
 ## Phase 15 blocked-outcome evidence report
