@@ -302,3 +302,29 @@ Each output contains separate synthetic risk/strategy databases and report/repor
 report/report.json, report/trials.csv and report/checksums.json. Existing directories are rejected.
 These results are software fixtures, not historical performance or investment recommendations.
 See [Monte Carlo model, license review and limitations](MONTE_CARLO.md). No order is enabled.
+
+## Phase 1 five-minute research (offline)
+
+Keep the existing Python 3.12+ virtual environment and pinned requirements. `tzdata` in the
+existing lock supplies ZoneInfo data on Windows; do not change the computer timezone or
+implement a manual DST offset. This phase uses the reviewed 2026 XNYS calendar only.
+
+In PowerShell, activate your environment as usual, then preview without keys:
+
+```powershell
+python -m etoro_demo_bot.alpaca --dry-run --timeframe 5Min --symbols IBM --start 2026-03-09T00:00:00Z --end 2026-03-10T00:00:00Z
+python -m etoro_demo_bot.history.intraday_cli --help
+python -m pytest -q tests/test_intraday_contracts.py
+```
+
+For an already imported, private complete five-minute manifest, use `intraday_cli` with
+`--cache`, `--manifest`, `--symbol`, inclusive `--start`/`--end` dates, aware `--audit-at`
+and `--calendar-verified-at` timestamps, and a new `--output` path. Quote Windows paths
+that contain spaces. The cache is opened read-only and a failed qualification creates no
+success report. No upstream code or real-data fixture needs to be installed.
+
+Do not enter keys or enable networking for this phase. Five-minute `--enable-network`
+fails before credential loading; the existing hourly workflow is unchanged. Five-minute
+inputs cannot enter the existing scanner/strategy/replay as hourly candles. See
+[FIVE_MINUTE_CONTRACTS.md](FIVE_MINUTE_CONTRACTS.md) for metadata, completeness, freshness,
+point-in-time and remaining evidence requirements. No ORB trading or orders are enabled.

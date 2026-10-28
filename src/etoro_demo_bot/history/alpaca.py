@@ -1,11 +1,12 @@
 """Offline documented Alpaca bars parser. Never infer original publication or eligibility."""
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
 from ..alpaca.contracts import page_cursor, query_from_source
+from ..timeframes import Timeframe
 from .archive import Archive
 from .models import Bar, ExchangeCalendar, History, Source
 from .providers import check_source, number, stamp
@@ -51,7 +52,13 @@ def decode_page(raw: bytes, source: Source) -> tuple[dict[str, tuple[Bar, ...]],
                 if not isinstance(item, dict):
                     raise ValueError()
                 start = stamp(item["t"])
-                end = start + timedelta(hours=1)
+                end = start + query.timeframe.duration
+                if query.timeframe is Timeframe.FIVE_MINUTES and (
+                    start.timestamp() % 300 != 0
+                    or previous is not None
+                    and start < previous + query.timeframe.duration
+                ):
+                    raise ValueError()
                 if not query.start <= start <= query.end or end > source.retrieved_at:
                     raise ValueError()
                 if previous is not None and start <= previous:
@@ -105,7 +112,7 @@ class AlpacaBars:
             self.symbol,
             self.exchange,
             "USD",
-            "1h",
+            query.timeframe.resolution,
             "raw" if query.adjustment == "raw" else "split_adjusted",
             rows.get(self.symbol, ()),
             source,
@@ -115,13 +122,24 @@ class AlpacaBars:
 def load_download(archive: Archive, manifest_id: str, symbol: str, *, exchange: str) -> History:
     """Revalidate the immutable complete-page chain before exposing any combined history."""
     raw, manifest_source = archive.get(manifest_id)
+    return _decode_download(archive, raw, manifest_source, symbol, exchange=exchange)
+
+
+def _decode_download(
+    archive: Archive, raw: bytes, manifest_source: Source, symbol: str, *, exchange: str
+) -> History:
     failed = False
     histories: list[History] = []
     try:
-        if manifest_source.provider != "alpaca-iex-download":
+        if manifest_source.provider not in ("alpaca-iex-download", "alpaca-iex-download-5min-v1"):
             raise ValueError()
         manifest: Any = json.loads(raw)
-        if manifest.get("schema") != "alpaca-iex-download-v1" or manifest.get("feed") != "iex":
+        expected_schema = (
+            "alpaca-iex-download-v1"
+            if manifest_source.provider == "alpaca-iex-download"
+            else "alpaca-iex-download-5min-v1"
+        )
+        if manifest.get("schema") != expected_schema or manifest.get("feed") != "iex":
             raise ValueError()
         ids = manifest["pages"]
         if not isinstance(ids, list) or not 1 <= len(ids) <= 100 or len(set(ids)) != len(ids):
@@ -154,6 +172,7 @@ def load_download(archive: Archive, manifest_id: str, symbol: str, *, exchange: 
         if (
             expected_token is not None
             or query is None
+            or (query.timeframe is Timeframe.HOUR) != (expected_schema == "alpaca-iex-download-v1")
             or manifest["query"] != query.params()
             or source.url != manifest_source.url
             or source.retrieved_at != manifest_source.retrieved_at
@@ -164,7 +183,9 @@ def load_download(archive: Archive, manifest_id: str, symbol: str, *, exchange: 
     if failed or not histories:
         raise ValueError("Invalid or incomplete Alpaca download manifest.")
     bars = tuple(bar for h in histories for bar in h.bars)
-    return History(symbol, exchange, "USD", "1h", histories[0].basis, bars, manifest_source)
+    return History(
+        symbol, exchange, "USD", histories[0].resolution, histories[0].basis, bars, manifest_source
+    )
 
 
 def session_counts(history: History, calendar: ExchangeCalendar) -> dict[str, int]:
@@ -185,3 +206,33 @@ def session_counts(history: History, calendar: ExchangeCalendar) -> dict[str, in
         else:
             counts["outside_regular"] += 1
     return counts
+
+
+def archive_research_pages(archive: Archive, page_ids: tuple[str, ...], symbol: str) -> str:
+    """Build a complete five-minute manifest from already archived pages; never network."""
+    import hashlib
+    from dataclasses import replace
+
+    if type(page_ids) is not tuple or not 1 <= len(page_ids) <= 100:
+        raise ValueError("Invalid research page list.")
+    _, first_source = archive.get(page_ids[0])
+    _, last_source = archive.get(page_ids[-1])
+    query = query_from_source(first_source)
+    if query.timeframe is not Timeframe.FIVE_MINUTES:
+        raise ValueError("Research manifest requires native five-minute pages.")
+    raw = json.dumps(
+        {
+            "schema": "alpaca-iex-download-5min-v1",
+            "query": query.params(),
+            "pages": list(page_ids),
+            "feed": "iex",
+        },
+        sort_keys=True,
+    ).encode()
+    source = replace(
+        last_source,
+        provider="alpaca-iex-download-5min-v1",
+        raw_sha256=hashlib.sha256(raw).hexdigest(),
+    )
+    _decode_download(archive, raw, source, symbol, exchange="XNYS")
+    return archive.put(raw, source)

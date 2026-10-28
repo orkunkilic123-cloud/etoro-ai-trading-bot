@@ -7,6 +7,7 @@ from pathlib import Path
 
 from ..history.archive import Archive
 from ..history.providers import stamp
+from ..timeframes import Timeframe
 from .client import MarketDataClient
 from .config import Credentials, DataError
 from .contracts import BARS, ORIGIN, BarsQuery
@@ -22,6 +23,7 @@ def main() -> int:
     parser.add_argument("--symbols", nargs="+", required=True)
     parser.add_argument("--start", required=True, help="Inclusive aware bar-start timestamp")
     parser.add_argument("--end", required=True, help="Inclusive aware bar-start timestamp")
+    parser.add_argument("--timeframe", choices=("1Hour", "5Min"), default="1Hour")
     parser.add_argument("--adjustment", choices=("raw", "split"), default="raw")
     parser.add_argument("--cache", type=Path, default=Path(".historical-data/alpaca.sqlite"))
     parser.add_argument(
@@ -38,11 +40,19 @@ def main() -> int:
         )
     failed = False
     try:
-        query = BarsQuery(tuple(args.symbols), stamp(args.start), stamp(args.end), args.adjustment)
+        query = BarsQuery(
+            tuple(args.symbols),
+            stamp(args.start),
+            stamp(args.end),
+            args.adjustment,
+            Timeframe(args.timeframe),
+        )
         if args.dry_run:
             print(json.dumps({"method": "GET", "url": ORIGIN + BARS, "params": query.params()}))
             print("Offline query only; access, historical age and coverage remain unverified.")
             return 0
+        if query.timeframe is not Timeframe.HOUR:
+            raise DataError("Five-minute networking is disabled in this phase.")
         credentials = Credentials.from_environment()
         archive = Archive(args.cache)
         with MarketDataClient(

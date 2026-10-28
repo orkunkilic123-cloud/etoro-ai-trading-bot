@@ -10,7 +10,7 @@ class NYSE2026:
     source_url = "https://www.nyse.com/markets/hours-calendars"
 
     def __init__(self, *, verified_at: datetime) -> None:
-        if verified_at.tzinfo is None:
+        if verified_at.tzinfo is None or verified_at.utcoffset() is None:
             raise ValueError("Calendar verification time must be timezone-aware.")
         self.verified_at = verified_at
         self.zone = ZoneInfo("America/New_York")

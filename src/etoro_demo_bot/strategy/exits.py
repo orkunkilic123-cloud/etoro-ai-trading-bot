@@ -8,6 +8,7 @@ from decimal import Decimal, DecimalException, localcontext
 from ..risk.models import identifier, money
 from ..scanner.indicators import calculate
 from ..scanner.models import Quote, aware, fresh
+from ..timeframes import require_hourly_baseline
 from .engine import earnings_safe
 from .journal import Journal, digest
 from .models import Evidence, ExitAdvice, ObservedBar, Position, Strategy, StrategyError
@@ -52,6 +53,8 @@ class ExitMonitor:
     def _evaluate(
         self, p: Position, q: Quote, bars: tuple[ObservedBar, ...], e: Evidence, now: datetime
     ) -> ExitAdvice:
+        for observed in bars:
+            require_hourly_baseline(observed.candle.contract)
         c, r = p.candidate, p.candidate.rules
         if (
             not identifier(p.position_id)

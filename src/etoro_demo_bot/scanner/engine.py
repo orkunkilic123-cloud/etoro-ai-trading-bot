@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import DecimalException
 
 from ..risk.models import money
+from ..timeframes import HOURLY_BASELINE, BarContract, require_hourly_baseline
 from .analysis import Budget, ScoringRules
 from .indicators import calculate
 from .models import (
@@ -64,11 +65,14 @@ class Scanner:
         evidence: EvidenceProvider,
         budget: Budget,
         *,
+        contract: BarContract = HOURLY_BASELINE,
         policy: ScanPolicy | None = None,
         rules: ScoringRules | None = None,
         earnings: EarningsProvider | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
+        require_hourly_baseline(contract)
+        self.contract = contract
         self.source, self.evidence, self.budget = source, evidence, budget
         self.policy, self.rules = policy or ScanPolicy(), rules or ScoringRules()
         self.earnings, self.clock = earnings, clock
@@ -121,6 +125,8 @@ class Scanner:
                     session = await self.evidence.session(instrument, now)
                     self._check_evidence(instrument.instrument_id, product, session, self._now())
                     history = await self.source.history(instrument.instrument_id)
+                    if any(b.contract != self.contract for b in history):
+                        raise ScanError("TIMEFRAME_OR_SESSION_INCOMPATIBLE")
                     # Ignore the forming candle, never use it in indicator or volume comparisons.
                     if any(not aware(x.start) or x.start > self._now() for x in history):
                         raise ScanError("INVALID_HISTORY")

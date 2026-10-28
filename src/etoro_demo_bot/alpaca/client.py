@@ -18,6 +18,7 @@ from ..history.models import Source
 from ..rate_limit import retry_delay
 from ..scanner.models import ScanError
 from ..scanner.storage import ScanStore
+from ..timeframes import Timeframe
 from .config import Credentials, DataError
 from .contracts import BARS, ORIGIN, TERMS, BarsQuery
 from .network import http_client
@@ -166,6 +167,8 @@ class MarketDataClient:
             raise DataError("Invalid market-data query type.")
         # Guard against malformed manually constructed/mutated query objects, too.
         query.__post_init__()
+        if query.timeframe is not Timeframe.HOUR:
+            raise DataError("Five-minute data is offline research only; network download disabled.")
         now = datetime.fromtimestamp(self._clock(), UTC)
         if query.end + timedelta(hours=1, minutes=15) > now:
             raise DataError("Request only completed historical hours at least 15 minutes old.")
