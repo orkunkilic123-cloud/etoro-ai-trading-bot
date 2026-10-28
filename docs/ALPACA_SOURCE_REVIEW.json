@@ -1,0 +1,50 @@
+[
+  {
+    "name": "bars",
+    "url": "https://docs.alpaca.markets/reference/stockbars",
+    "final_url": "https://docs.alpaca.markets/us/reference/stockbars",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:40:30.106799+00:00",
+    "sha256": "fade5e59685ff5570696fcae7da2045554435408ac0153d4794bd5360c29df2f"
+  },
+  {
+    "name": "plans",
+    "url": "https://docs.alpaca.markets/docs/about-market-data-api",
+    "final_url": "https://docs.alpaca.markets/us/docs/about-market-data-api",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:40:30.728738+00:00",
+    "sha256": "e76bf4a78e4e149fa56f4a25805dfb3eab79b217b8bd144598258674e19e2ace"
+  },
+  {
+    "name": "auth",
+    "url": "https://docs.alpaca.markets/docs/getting-started-with-alpaca-market-data",
+    "final_url": "https://docs.alpaca.markets/us/docs/getting-started-with-alpaca-market-data",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:40:31.128333+00:00",
+    "sha256": "380411c91b7ad14ef872205bd821ce21917adbbaf5b29006d25a5c5de74ddb64"
+  },
+  {
+    "name": "faq",
+    "url": "https://docs.alpaca.markets/docs/market-data-faq",
+    "final_url": "https://docs.alpaca.markets/us/docs/market-data-faq",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:40:30.391837+00:00",
+    "sha256": "caf9728e98fc74a499331570f5c103d3f66734495b0ee7bb5a088c360c2c69bb"
+  },
+  {
+    "name": "bar-construction",
+    "url": "https://docs.alpaca.markets/docs/stock-pricing-data",
+    "final_url": "https://docs.alpaca.markets/us/docs/stock-pricing-data",
+    "status": 404,
+    "retrieved_at": "2026-10-27T17:40:30.766806+00:00",
+    "sha256": "92347f325b074029b9c91d5f6f9899020cdf5b5cd28863bdcb4ff1f5dd99e180"
+  },
+  {
+    "name": "disclosures",
+    "url": "https://alpaca.markets/disclosures",
+    "final_url": "https://alpaca.markets/disclosures",
+    "status": 200,
+    "retrieved_at": "2026-10-27T17:40:29.905822+00:00",
+    "sha256": "07056e56eef7504f8582b24f8cbf7b26c3c019a63bd808505e82d2c9a4ad1ef3"
+  }
+]

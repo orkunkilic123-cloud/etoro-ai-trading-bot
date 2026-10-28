@@ -137,3 +137,16 @@ provider adapter or real return figures are claimed. Real runs for EUR 500/1,000
 Next dependencies: licensed exports or separately authorized free account integration; feed,
 corporate-action and calendar review; then an explicit offline hourly fill/expiry/funding contract
 compatible with available observations. Do not manufacture quotes or weaken production risk.
+
+### Read-only Alpaca market-data integration
+
+Implemented the officially documented stock-bars GET route with fixed IEX/USD/1Hour parameters,
+explicit environment-based local opt-in, paginated byte-preserving SQLite archives, shared pacing,
+bounded GET retries, sanitized failures and offline historical-provider adapters. See
+[ALPACA_MARKET_DATA.md](ALPACA_MARKET_DATA.md) for verified documentation and access restrictions.
+
+No actual credentials or authenticated requests were used. Documentation of history since 2016
+and a free Basic plan is not verified account or symbol coverage. Missing/action/revision evidence,
+IEX-only volume, native hourly alignment and existing quote/FX/eligibility requirements still gate
+EUR 500/1,000 backtests. A future small read requires separate authorization; no trading endpoint,
+paid subscription, risk relaxation or autonomous execution was added.

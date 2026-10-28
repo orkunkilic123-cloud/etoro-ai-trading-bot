@@ -138,3 +138,11 @@ Tests are deterministic synthetic hourly fixtures plus the existing permitted re
 reference sample. No new recorded equity fixture was acquired without verified rights.
 Cross-platform tests exercise LF/CRLF, UTF-8 BOM, offset/DST timestamps, exact bytes through
 SQLite, and the retained Git checkout/hash regression tests. No new dependencies were added.
+
+## Subsequent authorized integration
+
+The user subsequently authorized building a read-only Alpaca client, while continuing to prohibit
+actual credential access and authenticated calls during implementation. See
+[ALPACA_MARKET_DATA.md](ALPACA_MARKET_DATA.md). The fixed IEX adapter and mocked tests supersede
+the earlier "no downloader implemented" status; all statements about unverified actual hourly
+coverage and blocked real-data performance studies still apply.

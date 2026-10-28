@@ -51,3 +51,11 @@ free hourly access, acceptable terms and no private credentials together. The ne
 CSV/cache audit checks six-month coverage, session alignment, point-in-time warm-up and declared
 train/validation/test partitions before the backtester gate. No hourly stock/ETF samples or real
 performance results are claimed. See [Windows setup](docs/WINDOWS_SETUP.md) for the audit command.
+
+## Optional Alpaca market data
+
+A [read-only Alpaca IEX integration](docs/ALPACA_MARKET_DATA.md) supports paginated hourly bars,
+exact-byte SQLite provenance, safe retries and shared pacing. Networking defaults off; only the
+stock-bars GET endpoint is allowed. No actual credentials or authenticated requests were used
+in development. Free-tier entitlement, coverage and real-data backtest readiness remain
+unverified. See [Windows setup](docs/WINDOWS_SETUP.md) for local configuration and explicit opt-in.

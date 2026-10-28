@@ -222,3 +222,61 @@ The CLI emits coverage findings even when the study is blocked; exit zero means 
 written, not that a dataset passed. Schema/integrity errors fail with a sanitized message.
 Use new output paths. The report contains null metrics and does not run backtests or orders.
 Only reviewed 2026 sessions are supported; earlier years require another reviewed calendar.
+
+## Alpaca historical bars: local configuration and future opt-in
+
+Read [the free-feed restrictions and remaining gates](ALPACA_MARKET_DATA.md) first. Development
+uses mocks only. The following configuration/download instructions are for a future separately
+authorized local read; they were **not executed with real credentials** during implementation.
+No paid plan is needed by the intended Basic IEX route. Verify your account's Basic access and
+applicable data agreements yourself; do not send keys in chat. No `.env` file is loaded by Python.
+
+Set environment variables without putting secret literals in shell history (PowerShell 5.1+):
+
+```powershell
+$alpacaKeyInput = Read-Host 'Alpaca data API key' -AsSecureString
+$alpacaSecretInput = Read-Host 'Alpaca data API secret' -AsSecureString
+$env:ALPACA_DATA_API_KEY = [System.Net.NetworkCredential]::new('', $alpacaKeyInput).Password
+$env:ALPACA_DATA_API_SECRET = [System.Net.NetworkCredential]::new('', $alpacaSecretInput).Password
+# Only after reviewing Basic IEX access and the applicable data-use terms:
+$env:ALPACA_DATA_FREE_ACCESS_CONFIRMED = 'true'
+```
+
+Never print these variables or dump the environment. Opaque API keys may have brokerage powers;
+this client's exact route restriction is separate from the key's scope. A help command is offline:
+
+```powershell
+python -m etoro_demo_bot.alpaca --help
+python -m pytest -q
+python -m ruff check .
+python -m mypy
+```
+
+For a **separately authorized** small read of completed historical hours, explicit networking opt-in
+is required. This example is not a claim of actual coverage or trading eligibility:
+
+```powershell
+python -m etoro_demo_bot.alpaca --enable-network --symbols IBM SPY --start '2026-09-01T00:00:00Z' --end '2026-09-02T00:00:00Z'
+```
+
+Both bounds are inclusive bar-start timestamps; `end + 1 hour` must be at least 15 minutes before
+request time. The fixed endpoint requests IEX, USD, `1Hour`, ascending order, raw prices and no
+implicit current-symbol mapping. Optional `--adjustment split` preserves a distinct adjusted
+basis and still blocks unverified replay. There is no feed/base URL/account/order option.
+Missing `--enable-network` exits before reading keys. Authentication/permission errors do not
+trigger a paid feed or host fallback. A successful command prints only the completed manifest ID.
+It does not establish coverage completeness, original availability or backtest readiness.
+
+Pages, metadata, shared quota state and the complete manifest live in ignored
+`.historical-data/alpaca.sqlite`. Reuse this archive across application processes so pacing is
+shared; do not run other data clients against the same account quota without coordination.
+Use `history.alpaca.load_download()` for offline loading and the existing hourly audit before
+considering simulation. A calendar/offset/alignment failure must not be fixed by shifting prices.
+Clear the process-local values when finished:
+
+```powershell
+Remove-Item Env:ALPACA_DATA_API_KEY, Env:ALPACA_DATA_API_SECRET, Env:ALPACA_DATA_FREE_ACCESS_CONFIRMED -ErrorAction SilentlyContinue
+Remove-Variable alpacaKeyInput, alpacaSecretInput -ErrorAction SilentlyContinue
+```
+
+No eToro credentials are needed for this workflow. No Demo or Real orders are enabled.
