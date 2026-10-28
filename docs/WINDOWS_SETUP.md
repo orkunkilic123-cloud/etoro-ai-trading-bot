@@ -328,3 +328,23 @@ fails before credential loading; the existing hourly workflow is unchanged. Five
 inputs cannot enter the existing scanner/strategy/replay as hourly candles. See
 [FIVE_MINUTE_CONTRACTS.md](FIVE_MINUTE_CONTRACTS.md) for metadata, completeness, freshness,
 point-in-time and remaining evidence requirements. No ORB trading or orders are enabled.
+
+## Phase 14: offline intraday research (no credentials)
+
+Use the development environment above; skip all credential and connection-test
+sections for this workflow. These commands create only isolated synthetic research
+state/reports, with no external requests or broker orders:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_intraday_replay.py tests/test_intraday_evaluation.py -q
+.\.venv\Scripts\python.exe -m etoro_demo_bot.backtest.intraday --output .historical-data\orb-synthetic-500 --eur 500 --seed 19
+.\.venv\Scripts\python.exe -m etoro_demo_bot.backtest.intraday --output .historical-data\orb-synthetic-1000 --eur 1000 --seed 19
+.\.venv\Scripts\python.exe -m etoro_demo_bot.backtest.intraday.benchmark
+```
+
+Output directories must be new. An existing run is refused; never remove ordinary
+safety state to rerun. JSON/CSV/Markdown and checksums distinguish synthetic fixtures,
+conditional models and blocked evidence. The Monte Carlo comparison has 10,000
+whole-session outcome draws, not 10,000 independent historical observations.
+See [contracts, assumptions and blockers](INTRADAY_REPLAY.md). There is no genuine
+Alpaca download or trading activation in these commands.

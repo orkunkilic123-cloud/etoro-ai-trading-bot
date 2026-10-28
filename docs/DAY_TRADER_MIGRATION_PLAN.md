@@ -355,3 +355,13 @@ strategy as separate proposal-only interfaces over completed five-minute bars.
 Hourly engines and execution safeguards remain in place. Genuine-data replay,
 fill/cost modeling and Monte Carlo comparisons remain subsequent evidence-gated
 work; this implementation is not approval to trade.
+
+## Phase 14 implementation status
+
+The [independent intraday replay adapter](INTRADAY_REPLAY.md) adds conservative delayed
+fills, gap/partial/deadline handling, explicit costs/FX, unchanged risk handoff, fixed-plan
+chronological evaluation and 10,000-draw prior-session outcome comparisons. Synthetic
+fixtures validate mechanics only. Genuine replay remains gated on original availability,
+coverage, usage rights, actions and execution evidence/declared research assumptions.
+Next: audit an owner-provided capture bundle and independent comparator compatibility;
+no trading activation, leverage or automatic merge is included.
