@@ -12,7 +12,7 @@ from types import TracebackType
 
 import httpx
 
-from ..history.alpaca import decode_page, load_download
+from ..history.alpaca import archive_research_pages, decode_page, load_download
 from ..history.archive import Archive
 from ..history.models import Source
 from ..rate_limit import retry_delay
@@ -32,12 +32,14 @@ class MarketDataClient:
         *,
         enabled: bool = False,
         request_limit: int = 300,
+        allow_five_minute: bool = False,
         transport: httpx.BaseTransport | None = None,
         clock: Callable[[], float] = time.time,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         if type(request_limit) is not int or not 1 <= request_limit <= 300:
             raise DataError("Market-data request budget must be between 1 and 300.")
+        self._allow_five_minute = allow_five_minute is True
         self._remaining_requests = request_limit
         self._credentials, self._archive, self._enabled = credentials, archive, enabled is True
         self._clock, self._sleep = clock, sleep
@@ -142,8 +144,11 @@ class MarketDataClient:
                 for value in (self._credentials.key, self._credentials.secret)
             ):
                 raise DataError("Market-data response failed secret-exposure guard.")
+            provider = "alpaca-iex-hourly"
+            if query.timeframe is Timeframe.FIVE_MINUTES:
+                provider = "alpaca-iex-5min-v1"
             source = Source(
-                "alpaca-iex-hourly",
+                provider,
                 url,
                 TERMS,
                 datetime.fromtimestamp(self._clock(), UTC),
@@ -167,10 +172,10 @@ class MarketDataClient:
             raise DataError("Invalid market-data query type.")
         # Guard against malformed manually constructed/mutated query objects, too.
         query.__post_init__()
-        if query.timeframe is not Timeframe.HOUR:
-            raise DataError("Five-minute data is offline research only; network download disabled.")
+        if query.timeframe is Timeframe.FIVE_MINUTES and not self._allow_five_minute:
+            raise DataError("Five-minute download requires separate owner opt-in.")
         now = datetime.fromtimestamp(self._clock(), UTC)
-        if query.end + timedelta(hours=1, minutes=15) > now:
+        if query.end + query.timeframe.duration + timedelta(minutes=15) > now:
             raise DataError("Request only completed historical hours at least 15 minutes old.")
         result: str | None = None
         failed = False
@@ -201,6 +206,8 @@ class MarketDataClient:
                     last[symbol] = bars[-1].start
             ids.append(self._archive.put(raw, source))
             if next_token is None:
+                if query.timeframe is Timeframe.FIVE_MINUTES:
+                    return archive_research_pages(self._archive, tuple(ids), query.symbols[0])
                 manifest = json.dumps(
                     {
                         "schema": "alpaca-iex-download-v1",
