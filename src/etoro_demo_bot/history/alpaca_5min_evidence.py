@@ -5,8 +5,8 @@ from datetime import date, datetime
 from pathlib import Path
 
 from .archive import Archive
-from .intraday import qualify_download, research_report
 from .calendar import NYSE2026
+from .intraday import qualify_download, research_report
 
 MANDATORY = (
     "original_publication_and_revisions",
