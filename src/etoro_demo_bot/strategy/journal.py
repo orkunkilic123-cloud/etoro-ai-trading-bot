@@ -146,3 +146,58 @@ class Journal:
                 }
                 for row in db.execute("SELECT * FROM decisions ORDER BY sequence")
             )
+
+    def claim_research(
+        self, signal: str, proposal: str, payload: dict[str, Any], now: datetime
+    ) -> bool:
+        """Separate research claims; never insert an executable Candidate claim."""
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            self._time(db, now)
+            db.execute(
+                "CREATE TABLE IF NOT EXISTS research_claims("
+                "signal TEXT PRIMARY KEY, proposal TEXT UNIQUE NOT NULL, "
+                "payload TEXT NOT NULL, state TEXT NOT NULL)"
+            )
+            if db.execute("SELECT 1 FROM research_claims WHERE signal=?", (signal,)).fetchone():
+                return False
+            db.execute(
+                "INSERT INTO research_claims VALUES(?,?,?,?)",
+                (signal, proposal, encode(payload), "proposed"),
+            )
+            db.execute(
+                "INSERT INTO decisions(at,status,signal,details) VALUES(?,?,?,?)",
+                (now.isoformat(), "orb_proposed", signal, encode(payload)),
+            )
+        return True
+
+    def begin_research_review(self, signal: str, payload: dict[str, Any], now: datetime) -> None:
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            self._time(db, now)
+            row = db.execute(
+                "SELECT payload,state FROM research_claims WHERE signal=?", (signal,)
+            ).fetchone()
+            if row != (encode(payload), "proposed"):
+                raise StrategyError("UNJOURNALED_CHANGED_OR_REVIEWED_RESEARCH")
+            db.execute("UPDATE research_claims SET state='reviewing' WHERE signal=?", (signal,))
+
+    def finish_research_review(
+        self, signal: str, passed: bool, reasons: tuple[str, ...], now: datetime
+    ) -> None:
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            self._time(db, now)
+            state = "risk_pass" if passed else "risk_rejected"
+            if (
+                db.execute(
+                    "UPDATE research_claims SET state=? WHERE signal=? AND state='reviewing'",
+                    (state, signal),
+                ).rowcount
+                != 1
+            ):
+                raise StrategyError("RESEARCH_REVIEW_STATE_UNAVAILABLE")
+            db.execute(
+                "INSERT INTO decisions(at,status,signal,details) VALUES(?,?,?,?)",
+                (now.isoformat(), "orb_" + state, signal, encode({"reasons": reasons})),
+            )

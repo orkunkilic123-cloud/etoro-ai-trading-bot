@@ -75,3 +75,10 @@ see [Alpaca first read and readiness](docs/ALPACA_FIRST_READ.md).
 Phase 1 intraday research now has explicit versioned `1Hour`/`5Min` contracts and an
 [offline five-minute qualification path](docs/FIVE_MINUTE_CONTRACTS.md). Five-minute inputs
 remain isolated from strategy/execution; hourly calculations and safety gates are retained.
+
+### 15-minute ORB research (Phase 13)
+
+The separate five-minute research interface now supports long-only opening-range
+breakout proposals and explicit Risk Manager review, with no execution authority.
+See [ORB rules, evidence requirements and offline validation](docs/ORB_RESEARCH.md).
+Hourly strategy behavior remains unchanged; synthetic tests do not establish returns.
