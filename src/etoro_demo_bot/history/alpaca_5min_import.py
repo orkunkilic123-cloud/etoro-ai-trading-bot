@@ -54,8 +54,10 @@ def import_pages(
         if cursor != next_expected or (cursor is not None and cursor in seen):
             raise ValueError("INVALID_PAGINATION_CHAIN")
         if cursor is not None:
-            if not cursor.isascii() or not 1 <= len(cursor) <= 4096 or any(
-                ord(c) < 33 or ord(c) > 126 for c in cursor
+            if (
+                not cursor.isascii()
+                or not 1 <= len(cursor) <= 4096
+                or any(ord(c) < 33 or ord(c) > 126 for c in cursor)
             ):
                 raise ValueError("INVALID_PAGE_CURSOR")
             seen.add(cursor)
