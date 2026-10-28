@@ -24,6 +24,7 @@ def main() -> int:
     parser.add_argument("--start", required=True, help="Inclusive aware bar-start timestamp")
     parser.add_argument("--end", required=True, help="Inclusive aware bar-start timestamp")
     parser.add_argument("--timeframe", choices=("1Hour", "5Min"), default="1Hour")
+    parser.add_argument("--enable-five-minute", action="store_true")
     parser.add_argument("--adjustment", choices=("raw", "split"), default="raw")
     parser.add_argument("--cache", type=Path, default=Path(".historical-data/alpaca.sqlite"))
     parser.add_argument(
@@ -51,12 +52,20 @@ def main() -> int:
             print(json.dumps({"method": "GET", "url": ORIGIN + BARS, "params": query.params()}))
             print("Offline query only; access, historical age and coverage remain unverified.")
             return 0
-        if query.timeframe is not Timeframe.HOUR:
-            raise DataError("Five-minute networking is disabled in this phase.")
+        if query.timeframe is Timeframe.FIVE_MINUTES and not args.enable_five_minute:
+            raise DataError("Five-minute read requires separate owner opt-in.")
+        if args.enable_five_minute and query.timeframe is not Timeframe.FIVE_MINUTES:
+            raise DataError("Five-minute opt-in requires 5Min timeframe.")
+        if args.enable_five_minute and args.request_limit > 30:
+            raise DataError("Five-minute request budget must be at most 30.")
         credentials = Credentials.from_environment()
         archive = Archive(args.cache)
         with MarketDataClient(
-            credentials, archive, enabled=True, request_limit=args.request_limit
+            credentials,
+            archive,
+            enabled=True,
+            request_limit=args.request_limit,
+            allow_five_minute=args.enable_five_minute,
         ) as client:
             identity = client.fetch(query)
     except (DataError, ValueError, OSError, sqlite3.Error):
