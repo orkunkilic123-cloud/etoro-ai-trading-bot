@@ -280,3 +280,9 @@ Remove-Variable alpacaKeyInput, alpacaSecretInput -ErrorAction SilentlyContinue
 ```
 
 No eToro credentials are needed for this workflow. No Demo or Real orders are enabled.
+
+For Codex Cloud, use [Network Secrets setup](CODEX_CLOUD_ALPACA.md) instead of entering raw
+keys in a shell. Leave ALPACA_DATA_CODEX_PROXY_REQUIRED unset/false for local Windows use.
+TLS verification uses the system trust store, or explicitly configured SSL_CERT_FILE /
+SSL_CERT_DIR. Do not set these to untrusted bundles. Cloud proxy routing is not inherited
+on local Windows: an arbitrary HTTPS_PROXY is not an approved Codex proxy.

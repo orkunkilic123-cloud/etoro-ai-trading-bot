@@ -57,8 +57,10 @@ repository. The local confirmation flag records a user assertion, not verified a
 - `alpaca.client.MarketDataClient` has one exact allowed method/path and one fixed HTTPS host.
   No base-URL/header/feed override, generic SDK client, account discovery or order method is
   exposed. `enabled=False` by default. Redirects are never followed; TLS verification stays on.
-  Environment proxy/netrc inheritance is disabled. A custom network environment may need a
-  separately reviewed trust configuration; never disable TLS verification to make it work.
+  Codex Cloud uses its policy-approved explicit HTTPS proxy and supplied CA trust; see
+  [cloud setup](CODEX_CLOUD_ALPACA.md). Generic proxy/netrc inheritance remains disabled,
+  so NO_PROXY cannot bypass this route. Local mode uses verified system/configured CA trust.
+  Never disable TLS verification to make a connection work.
 - `request()` rejects all other methods, full URLs, alternate paths and encoded traversal before
   any transport call. Only query-generated parameters can reach the transport. API keys can have
   broader powers at Alpaca; this application boundary does not make the underlying key read-only.

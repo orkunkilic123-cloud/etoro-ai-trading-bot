@@ -59,3 +59,7 @@ exact-byte SQLite provenance, safe retries and shared pacing. Networking default
 stock-bars GET endpoint is allowed. No actual credentials or authenticated requests were used
 in development. Free-tier entitlement, coverage and real-data backtest readiness remain
 unverified. See [Windows setup](docs/WINDOWS_SETUP.md) for local configuration and explicit opt-in.
+
+Codex Cloud Alpaca downloads support destination-scoped Network Secrets through the approved
+proxy with verified TLS. See [cloud configuration](docs/CODEX_CLOUD_ALPACA.md); network access
+remains opt-in and account access has not been verified.

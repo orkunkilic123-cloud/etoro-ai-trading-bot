@@ -20,6 +20,7 @@ from ..scanner.models import ScanError
 from ..scanner.storage import ScanStore
 from .config import Credentials, DataError
 from .contracts import BARS, ORIGIN, TERMS, BarsQuery
+from .network import http_client
 
 
 class MarketDataClient:
@@ -37,12 +38,7 @@ class MarketDataClient:
         self._clock, self._sleep = clock, sleep
         self._quota = ScanStore(archive.path)
         self._lock = threading.Lock()
-        self._http = httpx.Client(
-            transport=transport,
-            timeout=httpx.Timeout(20, connect=5),
-            follow_redirects=False,
-            trust_env=False,
-        )
+        self._http = http_client(transport)
 
     def __enter__(self) -> "MarketDataClient":
         return self
