@@ -1,7 +1,7 @@
 """Conservative offline five-minute evidence report; never an execution permit."""
 
 import json
-from datetime import UTC, datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from .archive import Archive
@@ -34,8 +34,6 @@ def evidence_report(
     issues: list[str] = []
     structural: dict[str, object] | None = None
     try:
-        from datetime import date
-
         series = qualify_download(
             archive, manifest, symbol,
             start=date.fromisoformat(start), end=date.fromisoformat(end),
