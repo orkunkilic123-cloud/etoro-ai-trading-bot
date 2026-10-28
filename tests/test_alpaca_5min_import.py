@@ -151,21 +151,27 @@ def test_owner_5min_read_only_opt_in_and_private_manifest(tmp_path: Path) -> Non
 
     archive = Archive(tmp_path / "private.sqlite")
     synthetic_keys = Credentials("SYNTHETIC_KEY", "SYNTHETIC_SECRET")
-    kwargs = {
-        "enabled": True,
-        "transport": httpx.MockTransport(handler),
-        "clock": lambda: datetime(2026, 10, 28, tzinfo=UTC).timestamp(),
-        "request_limit": 1,
-    }
-    with MarketDataClient(synthetic_keys, archive, **kwargs) as client:
+    transport = httpx.MockTransport(handler)
+    now = datetime(2026, 10, 28, tzinfo=UTC).timestamp()
+    with MarketDataClient(
+        synthetic_keys,
+        archive,
+        enabled=True,
+        transport=transport,
+        clock=lambda: now,
+        request_limit=1,
+    ) as client:
         with pytest.raises(DataError, match="owner opt-in"):
             client.fetch(query())
     assert not queries
     with MarketDataClient(
         synthetic_keys,
         archive,
+        enabled=True,
+        transport=transport,
+        clock=lambda: now,
+        request_limit=1,
         allow_five_minute=True,
-        **kwargs,
     ) as client:
         manifest = client.fetch(query())
     assert len(queries) == 1
