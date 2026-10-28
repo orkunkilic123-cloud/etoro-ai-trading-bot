@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import Protocol
 
 from ..risk.models import AccountSnapshot, Decision, Proposal
+from ..timeframes import HOURLY_BASELINE, BarContract
 
 
 class ScanError(ValueError):
@@ -45,6 +46,7 @@ class Candle:
     low: float
     close: float
     volume: float | None
+    contract: BarContract = HOURLY_BASELINE
 
 
 @dataclass(frozen=True)
@@ -115,6 +117,7 @@ class Opportunity:
     budget_usd: Decimal
     fundamentals: FundamentalAnalysis | None = None
     execution_authorized: bool = False
+    contract: BarContract = HOURLY_BASELINE
 
     def valid_at(self, now: datetime) -> bool:
         return aware(now) and self.created_at <= now < self.expires_at

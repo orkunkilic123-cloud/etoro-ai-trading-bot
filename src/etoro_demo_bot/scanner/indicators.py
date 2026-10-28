@@ -4,6 +4,7 @@ import math
 import statistics
 from datetime import timedelta
 
+from ..timeframes import require_hourly_baseline
 from .models import Candle, Features, ScanError, aware
 
 
@@ -32,9 +33,15 @@ def wilder(values: tuple[float, ...], period: int) -> float:
 
 
 def calculate(candles: tuple[Candle, ...], *, interval_seconds: int = 3600) -> Features:
-    if len(candles) < 35 or interval_seconds <= 0:
+    if type(interval_seconds) is not int or interval_seconds != 3600:
+        raise ScanError("TIMEFRAME_OR_SESSION_INCOMPATIBLE")
+    if len(candles) < 35:
         raise ScanError("INSUFFICIENT_HISTORY")
     for index, bar in enumerate(candles):
+        try:
+            require_hourly_baseline(bar.contract)
+        except ValueError:
+            raise ScanError("TIMEFRAME_OR_SESSION_INCOMPATIBLE") from None
         prices = (bar.open, bar.high, bar.low, bar.close)
         if (
             not aware(bar.start)

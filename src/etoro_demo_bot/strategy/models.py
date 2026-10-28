@@ -9,6 +9,7 @@ from typing import Protocol
 from ..risk.models import AccountSnapshot, Decision, Proposal, money
 from ..scanner.analysis import Budget
 from ..scanner.models import Candle, Eligibility, Opportunity, ProductEvidence, SessionEvidence
+from ..timeframes import HOURLY_BASELINE, BarContract
 
 D = Decimal
 
@@ -150,6 +151,7 @@ class Context:
     bars: tuple[ObservedBar, ...]
     evidence: Evidence
     account: AccountSnapshot
+    contract: BarContract = HOURLY_BASELINE
 
 
 @dataclass(frozen=True)

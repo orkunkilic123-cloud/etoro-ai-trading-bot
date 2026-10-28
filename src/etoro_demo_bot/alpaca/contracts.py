@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, urlsplit
 from ..history.models import Source
 from ..history.providers import stamp
 from ..scanner.models import aware
+from ..timeframes import Timeframe
 
 ORIGIN = "https://data.alpaca.markets"
 BARS = "/v2/stocks/bars"
@@ -20,6 +21,8 @@ class BarsQuery:
     start: datetime
     end: datetime  # Inclusive bar-start bound, as documented by Alpaca.
     adjustment: str = "raw"
+    timeframe: Timeframe = Timeframe.HOUR
+    version: str = "alpaca-bars-v1"
 
     def __post_init__(self) -> None:
         if (
@@ -34,13 +37,15 @@ class BarsQuery:
             or not aware(self.end)
             or self.start >= self.end
             or self.adjustment not in ("raw", "split")
+            or type(self.timeframe) is not Timeframe
+            or self.version != "alpaca-bars-v1"
         ):
             raise ValueError("Invalid Alpaca hourly query.")
 
     def params(self) -> dict[str, str]:
         return {
             "symbols": ",".join(self.symbols),
-            "timeframe": "1Hour",
+            "timeframe": self.timeframe.value,
             "start": self.start.astimezone(UTC).isoformat(),
             "end": self.end.astimezone(UTC).isoformat(),
             "feed": "iex",
@@ -78,7 +83,6 @@ def query_from_source(source: Source) -> BarsQuery:
         or any(
             values[k] != [v]
             for k, v in {
-                "timeframe": "1Hour",
                 "feed": "iex",
                 "currency": "USD",
                 "asof": "-",
@@ -86,7 +90,14 @@ def query_from_source(source: Source) -> BarsQuery:
                 "limit": "10000",
             }.items()
         )
-        or source.provider != "alpaca-iex-hourly"
+        or source.provider
+        != (
+            "alpaca-iex-hourly"
+            if values.get("timeframe") == ["1Hour"]
+            else "alpaca-iex-5min-v1"
+            if values.get("timeframe") == ["5Min"]
+            else ""
+        )
     ):
         raise ValueError("Invalid Alpaca page provenance.")
     return BarsQuery(
@@ -94,6 +105,7 @@ def query_from_source(source: Source) -> BarsQuery:
         stamp(values["start"][0]),
         stamp(values["end"][0]),
         values["adjustment"][0],
+        Timeframe(values["timeframe"][0]),
     )
 
 

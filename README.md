@@ -71,3 +71,7 @@ claim or execution authorization is produced. [Windows demo commands](docs/WINDO
 
 For the owner-operated first read, direct manifest audit and remaining historical replay blockers,
 see [Alpaca first read and readiness](docs/ALPACA_FIRST_READ.md).
+
+Phase 1 intraday research now has explicit versioned `1Hour`/`5Min` contracts and an
+[offline five-minute qualification path](docs/FIVE_MINUTE_CONTRACTS.md). Five-minute inputs
+remain isolated from strategy/execution; hourly calculations and safety gates are retained.

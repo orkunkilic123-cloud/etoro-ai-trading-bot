@@ -7,6 +7,7 @@ from decimal import Decimal
 from ..risk.models import money
 from ..scanner.models import Instrument, Quote, aware, fresh
 from ..strategy.models import Evidence, ObservedBar, Rules
+from ..timeframes import HOURLY_BASELINE, BarContract, require_hourly_baseline
 
 D = Decimal
 
@@ -46,8 +47,12 @@ class Dataset:
     history: tuple[ObservedBar, ...]
     ticks: tuple[Tick, ...]
     provenance: Provenance
+    contract: BarContract = HOURLY_BASELINE
 
     def validate(self) -> None:
+        require_hourly_baseline(self.contract)
+        for observed in self.history:
+            require_hourly_baseline(observed.candle.contract)
         self.provenance.validate()
         if (
             not aware(self.start)

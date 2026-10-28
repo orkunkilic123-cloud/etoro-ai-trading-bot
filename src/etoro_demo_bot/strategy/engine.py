@@ -11,6 +11,7 @@ from ..risk.engine import RiskEngine
 from ..risk.models import AccountSnapshot, Decision, Proposal, identifier, money
 from ..scanner.indicators import calculate
 from ..scanner.models import Features, aware, fresh
+from ..timeframes import require_hourly_baseline
 from .journal import Journal, digest
 from .models import (
     Candidate,
@@ -52,6 +53,10 @@ def earnings_safe(
 
 def point_in_time(context: Context, now: datetime) -> tuple[Features, datetime]:
     opportunity = context.opportunity
+    require_hourly_baseline(context.contract)
+    require_hourly_baseline(opportunity.contract)
+    for observed in context.bars:
+        require_hourly_baseline(observed.candle.contract)
     if (
         not aware(now)
         or not aware(opportunity.created_at)
