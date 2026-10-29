@@ -86,7 +86,7 @@ def test_cli_response_schema_category(
     )
     assert main() == 1
     output = capsys.readouterr().out
-    assert "incomplete-or-incompatible-data" in output
+    assert "credit: invalid value" in output
     assert "PRIVATE_SYNTHETIC_RESPONSE" not in output
 
 
