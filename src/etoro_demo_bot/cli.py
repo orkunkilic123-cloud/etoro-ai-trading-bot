@@ -14,7 +14,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         with DemoClient(Credentials.from_environment()) as client:
-            result = client.portfolio()
+            result = client.pnl() if args.command == "show-demo-balance" else client.portfolio()
             if args.command == "show-demo-balance":
                 if result.partial:
                     raise IncompleteDemoSnapshot("Partial Demo portfolio response")
@@ -27,8 +27,8 @@ def main() -> int:
     except (ApiError, ConfigurationError, IncompleteDemoSnapshot):
         if args.command == "show-demo-balance":
             print(
-                "Demo balance unavailable: the portfolio GET does not establish "
-                "the documented P&L cash/equity schema. No balance is inferred."
+                "Demo balance unavailable: Demo P&L data incomplete, rejected or unavailable; "
+                "no financial amount is inferred."
             )
         else:
             print("Demo check unavailable: credentials or API read failed.")
