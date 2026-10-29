@@ -1,4 +1,4 @@
-"""The only broker boundary: two exact GET routes, no redirects or mutations."""
+"""The only broker boundary: three exact GET routes, no redirects or mutations."""
 
 import random
 import threading
@@ -14,8 +14,9 @@ from .rate_limit import RateLimiter, retry_delay
 
 ORIGIN = "https://public-api.etoro.com"
 PORTFOLIO = "/api/v1/trading/info/demo/portfolio"
+PNL = "/api/v1/trading/info/demo/pnl"
 RATES = "/api/v2/market-data/rates"
-ALLOWED = frozenset({("GET", PORTFOLIO), ("GET", RATES)})
+ALLOWED = frozenset({("GET", PORTFOLIO), ("GET", PNL), ("GET", RATES)})
 
 
 class ApiError(Exception):
@@ -66,6 +67,9 @@ class DemoClient:
     def portfolio(self) -> ApiResult:
         return self.request("GET", PORTFOLIO)
 
+    def pnl(self) -> ApiResult:
+        return self.request("GET", PNL)
+
     def rates(self, instrument_ids: list[int]) -> ApiResult:
         if not 1 <= len(instrument_ids) <= 1000 or any(
             type(i) is not int or i <= 0 for i in instrument_ids
@@ -90,7 +94,7 @@ class DemoClient:
             raise EndpointBlocked(
                 "Only explicitly allowed read-only Demo/data operations are allowed."
             )
-        if path == PORTFOLIO and params:
+        if path in {PORTFOLIO, PNL} and params:
             raise EndpointBlocked("Portfolio query overrides are blocked.")
         if path == RATES:
             ids = (params or {}).get("instrumentIds", "").split(",")
