@@ -161,13 +161,16 @@ class DemoClient:
             if status != 200 and not (path == RATES and status == 206):
                 response.close()
                 if path == PNL:
-                    category = (
-                        "authorization" if status in {401, 403} else
-                        "unsupported-endpoint" if status == 404 else
-                        "rate-limit" if status == 429 else
-                        "server" if 500 <= status <= 599 else
-                        "unexpected-http"
-                    )
+                    if status in {401, 403}:
+                        category = "authorization"
+                    elif status == 404:
+                        category = "unsupported-endpoint"
+                    elif status == 429:
+                        category = "rate-limit"
+                    elif 500 <= status <= 599:
+                        category = "server"
+                    else:
+                        category = "unexpected-http"
                     raise ReadDiagnostic(category)
                 raise ApiError(f"API read rejected (HTTP {status}); no response body retained.")
             data: Any = None
