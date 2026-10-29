@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 FIELDS = frozenset(
-    {"response", "credit", "ordersForOpen", "orders", "mirrorID", "amount", "availableCash"}
+    {"response", "credit", "ordersForOpen", "orders", "mirrorID", "mirrorId", "amount", "availableCash"}
 )
 
 
@@ -66,7 +66,7 @@ def normalize_demo_cash(data: Mapping[str, Any]) -> DemoCashObservation:
     for item in opening:
         if not isinstance(item, dict):
             raise IncompleteDemoSnapshot("ordersForOpen", "incompatible structure")
-        mirror_id = _required(item, "mirrorID")
+        if "mirrorID" in item and "mirrorId" in item:\n            raise IncompleteDemoSnapshot("mirrorID", "incompatible structure")\n        mirror_key = "mirrorID" if "mirrorID" in item else "mirrorId"\n        mirror_id = _required(item, mirror_key)
         if type(mirror_id) is not int:
             raise IncompleteDemoSnapshot("mirrorID", "invalid type")
         amount = _amount(_required(item, "amount"), "amount")
