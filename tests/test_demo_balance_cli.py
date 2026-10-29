@@ -165,3 +165,33 @@ def test_partial_response_rejected(
     monkeypatch.setattr(DemoClient, "pnl", lambda self: ApiResult(data=fixture(), partial=True))
     assert main() == 1
     assert "650" not in capsys.readouterr().out
+
+
+def test_documented_client_portfolio_wrapper() -> None:
+    wrapped = {"clientPortfolio": fixture()}
+    result = display_demo_balance(wrapped)
+    assert "Available cash (calculated): USD 650.00" in result
+
+
+def test_wrapped_mirror_id_spelling() -> None:
+    wrapped = {"clientPortfolio": {
+        "credit": 1000,
+        "ordersForOpen": [{"mirrorId": 0, "amount": 200}],
+        "orders": [],
+    }}
+    assert "Available cash (calculated): USD 800.00" in display_demo_balance(wrapped)
+
+
+def test_ambiguous_mirror_spelling_fails_closed() -> None:
+    wrapped = {"clientPortfolio": {
+        "credit": 1000,
+        "ordersForOpen": [{"mirrorID": 0, "mirrorId": 1, "amount": 200}],
+        "orders": [],
+    }}
+    with pytest.raises(IncompleteDemoSnapshot):
+        display_demo_balance(wrapped)
+
+
+def test_invalid_client_portfolio_wrapper_fails_closed() -> None:
+    with pytest.raises(IncompleteDemoSnapshot):
+        display_demo_balance({"clientPortfolio": None})
