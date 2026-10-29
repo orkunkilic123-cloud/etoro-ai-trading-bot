@@ -47,8 +47,10 @@ Deduplication is per exact feed URL and ID; changing query URLs can create separ
 This local cache contains public text and private research timing. Use trusted local filesystem
 permissions; it is not tamper-proof or suitable as an authoritative production account store.
 It is separate from all strategy, risk and execution state. The first import creates its schema
-only in an empty database. Reopening requires exactly the known news tables, with no unrelated
-user tables, views or triggers; unrelated or partial schemas are rejected before schema writes.
+only in an empty database. Reopening requires the known tables, exact columns and revision
+uniqueness constraint, with no unrelated user tables, views or triggers. Unrelated, altered or
+partial schemas are rejected before schema writes. Existing instances subsequently use explicit
+read/write-existing or read-only modes; deleting their database cannot silently recreate it.
 Reopening a valid archive preserves prior snapshots/revisions. Never select a risk/execution DB.
 
 `NewsArchive.window(instrument_id, as_of=...)` satisfies the existing `EarningsCalendar` interface
@@ -79,3 +81,45 @@ Deterministic synthetic tests cover clocks, revisions/as-of queries, restart ded
 reverted revisions, unsafe XML/URLs, future data, limits and rejection by the actual earnings gate.
 They establish parser/storage behavior only. No source freshness, historical completeness,
 company-to-instrument mapping, sentiment accuracy or authenticated broker compatibility is claimed.
+
+## Typed dashboard evidence and integrity review
+
+The local dashboard can call:
+
+```python
+from etoro_demo_bot.news.archive import summarize_archive
+summary = summarize_archive(path, as_of=aware_time, limit=20)
+```
+
+This function opens SQLite in read-only mode and never initializes an archive. It returns frozen
+`NewsSummary` / `NewsItemSummary` values: reported title/form, public source locations, nullable
+publication time, source update time, actual stored observation time, revision SHA-256 and keyword
+tags. `earnings_coverage` is always UNKNOWN, `source_verification` UNVERIFIED and execution is
+unauthorized. The dashboard must escape titles/tags/URLs and treat them solely as external text.
+Display URLs omit query strings; full supplied provenance stays in the local archive. No private
+filesystem path is included. These are current informational observations, not historical
+backtest inputs or permission to trade.
+
+`status` reports EMPTY when no snapshot was observed by the requested time, AVAILABLE for recent
+observations, and STALE after 24 hours. AVAILABLE means only that a stored observation is recent;
+it never establishes complete feed coverage or freshness of every reported filing. The summary
+reports total retained event identities and truncation; limits are 1–100 items, default 20.
+
+Before reading facts or writing another ingestion, validation reparses the original bounded raw
+snapshots, checks their hashes and chronological observation clocks, and compares the derived
+observations/revisions against that reconstruction. Altered raw bytes, deleted rows, incompatible
+schemas and inconsistent revisions block. Valid later snapshots do not enter earlier as-of facts.
+The reviewer budget is 1,000 snapshots, 32 MiB raw bytes and 20,000 observation/revision rows;
+exceeding it blocks before commit. A future reviewed retention/partition scheme is needed for
+larger archives. There is no silent truncation or automatic purge of provenance.
+
+This establishes internal consistency, not independent authenticity: a party able to rewrite
+all raw evidence and hashes can still fabricate an archive. Safe read-only errors contain fixed
+codes and no local paths, query parameters or underlying SQLite/XML exception text.
+
+Reported SEC filing metadata is useful evidence of an observed document, but an 8-K title/form
+alone does not establish Item 2.02 contents, numerical earnings results, consensus, or a scheduled
+announcement. The existing pinned reference's XBRL analyst selects current/restated values; an
+adapter for historical reported results would additionally need units, concept mapping, acceptance
+clocks and amendment vintages. That work is deferred rather than treating this feed as a complete
+EarningsWindow. No new provider, downloader or earnings-prediction mechanism was introduced.

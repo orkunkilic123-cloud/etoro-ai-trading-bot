@@ -40,12 +40,16 @@ def _signed(value: Any) -> Decimal:
     return number
 
 
-def _stamp(value: Any, now: datetime) -> datetime:
+def _stamp(value: Any, now: datetime, *, no_later_than: datetime | None = None) -> datetime:
     try:
         stamp = datetime.fromisoformat(value)
-        if stamp.tzinfo is None or not 0 <= (now - stamp).total_seconds() <= 60:
+        if (
+            stamp.tzinfo is None
+            or not 0 <= (now - stamp).total_seconds() <= 60
+            or (no_later_than is not None and stamp > no_later_than)
+        ):
             raise ValueError
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         raise DiagnosticError("STALE_OR_INVALID_OBSERVATION") from None
     return stamp
 
@@ -62,6 +66,13 @@ def _rows(data: Mapping[str, Any], name: str) -> list[dict[str, Any]]:
 
 
 @dataclass(frozen=True)
+class InstrumentObservation:
+    margin: Decimal = field(repr=False)
+    pnl: Decimal = field(repr=False)
+    units: Decimal = field(repr=False)
+
+
+@dataclass(frozen=True)
 class PnlObservation:
     cash: Decimal = field(repr=False)
     credit: Decimal = field(repr=False)
@@ -71,23 +82,25 @@ class PnlObservation:
     pending: dict[int, tuple[int, Decimal]] = field(repr=False)
     customer_ids: frozenset[int] = field(repr=False)
     position_count: int
+    instruments: dict[int, InstrumentObservation] = field(repr=False)
+    observed_at: datetime = field(repr=False)
 
 
 def parse_pnl(data: dict[str, Any], *, observed_at: datetime, now: datetime) -> PnlObservation:
     """Validate the documented USD/manual/long/underlying subset; never attest Demo identity."""
     if now.tzinfo is None:
         raise DiagnosticError("INVALID_CLOCK")
-    _stamp(observed_at.isoformat(), now)
+    observed_at = _stamp(observed_at.isoformat(), now)
     with localcontext(Context(prec=60)):
         try:
-            return _parse_pnl(data, now)
+            return _parse_pnl(data, now, observed_at)
         except (ValueError, TypeError, KeyError, ArithmeticError):
             pass
     # Outside handler: suppress source-bearing exception contexts.
     raise DiagnosticError("BROKER_OBSERVATION_REJECTED")
 
 
-def _parse_pnl(data: dict[str, Any], now: datetime) -> PnlObservation:
+def _parse_pnl(data: dict[str, Any], now: datetime, observed_at: datetime) -> PnlObservation:
     cash = normalize_demo_pnl_response(data)
     p = data["clientPortfolio"]
     if type(p.get("accountCurrencyId")) is not int or p["accountCurrencyId"] != 1:
@@ -121,10 +134,17 @@ def _parse_pnl(data: dict[str, Any], now: datetime) -> PnlObservation:
                 raise DiagnosticError("UNSUPPORTED_ORDER")
             if name == "ordersForOpen" and _id(item.get("mirrorId"), zero=True) != 0:
                 raise DiagnosticError("COPY_ORDER_UNSUPPORTED")
-            pending[oid] = (iid, _amount(item.get("amount")))
+            amount = _amount(item.get("amount"))
+            # Units alone do not establish a bounded USD allocation or conversion rate.
+            if amount <= 0:
+                raise DiagnosticError("PENDING_CASH_ALLOCATION_UNVERIFIED")
+            pending[oid] = (iid, amount)
     position_ids: set[int] = set()
     totals: dict[int, Decimal] = defaultdict(Decimal)
     counts: dict[int, int] = defaultdict(int)
+    margins: dict[int, Decimal] = defaultdict(Decimal)
+    pnls: dict[int, Decimal] = defaultdict(Decimal)
+    units: dict[int, Decimal] = defaultdict(Decimal)
     investment = Decimal(0)
     pnl = Decimal(0)
     for item in _rows(p, "positions"):
@@ -142,19 +162,27 @@ def _parse_pnl(data: dict[str, Any], now: datetime) -> PnlObservation:
             or _id(item.get("mirrorID"), zero=True) != 0
         ):
             raise DiagnosticError("UNSUPPORTED_POSITION")
-        if _amount(item.get("units")) <= 0:
+        position_units = _amount(item.get("units"))
+        if position_units <= 0:
             raise DiagnosticError("INVALID_POSITION_UNITS")
         mark = item.get("unrealizedPnL")
         if not isinstance(mark, dict):
             raise DiagnosticError("POSITION_VALUATION_MISSING")
-        _stamp(mark.get("timestamp"), now)
+        _stamp(mark.get("timestamp"), now, no_later_than=observed_at)
         exposure = _amount(mark.get("exposureInAccountCurrency"))
         if exposure <= 0:
             raise DiagnosticError("INVALID_EXPOSURE")
         totals[iid] += exposure
         counts[iid] += 1
-        investment += _amount(item.get("amount"))
-        pnl += _signed(mark.get("pnL"))
+        margin = _amount(item.get("amount"))
+        position_pnl = _signed(mark.get("pnL"))
+        if "marginInAccountCurrency" in mark and _amount(mark["marginInAccountCurrency"]) != margin:
+            raise DiagnosticError("POSITION_MARGIN_INCONSISTENT")
+        investment += margin
+        pnl += position_pnl
+        margins[iid] += margin
+        pnls[iid] += position_pnl
+        units[iid] += position_units
     if len(customers) > 1 or pnl != _signed(p.get("unrealizedPnL")):
         raise DiagnosticError("INCONSISTENT_CUSTOMER_OR_PNL")
     return PnlObservation(
@@ -166,6 +194,8 @@ def _parse_pnl(data: dict[str, Any], now: datetime) -> PnlObservation:
         pending,
         frozenset(customers),
         len(position_ids),
+        {i: InstrumentObservation(margins[i], pnls[i], units[i]) for i in sorted(totals)},
+        observed_at,
     )
 
 
@@ -180,7 +210,7 @@ def aggregate_equity(
             cid = _id(data.get("cid"))
             if observation.customer_ids and observation.customer_ids != frozenset({cid}):
                 raise ValueError
-            _stamp(data.get("timestamp"), now)
+            _stamp(data.get("timestamp"), now, no_later_than=observation.observed_at)
             if _rows(data, "mirrors"):
                 raise ValueError
             totals = data["accountTotals"]
@@ -209,6 +239,17 @@ def aggregate_equity(
                 seen.add(iid)
                 if _amount(item.get("netCurrentExposureAccountCurrency")) != expected[iid]:
                     raise ValueError
+                instrument = observation.instruments[iid]
+                # These meanings/formula are explicit in the aggregate schema. Do not
+                # infer quantities from prices or fees, or accept contradictory extra data.
+                for name, value in (
+                    ("totalMarginAccountCurrency", instrument.margin),
+                    ("accountCurrencyReturn", instrument.pnl),
+                    ("netUnits", instrument.units),
+                    ("liquidationValueAccountCurrency", instrument.margin + instrument.pnl),
+                ):
+                    if name in item and _signed(item[name]) != value:
+                        raise ValueError
             if seen != set(expected):
                 raise ValueError
             return equity
@@ -232,6 +273,8 @@ def read_local_state(path: Path, *, now: datetime) -> LocalState:
     """Consistent read-only SQLite snapshot; never create missing state or clear holds."""
     result = None
     try:
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise ValueError
         with closing(
             sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True, timeout=2)
         ) as db:
@@ -241,9 +284,15 @@ def read_local_state(path: Path, *, now: datetime) -> LocalState:
                 raise ValueError
             if db.execute("PRAGMA user_version").fetchone() != (1,):
                 raise ValueError
-            account, killed = db.execute("SELECT account,killed FROM safety WHERE id=1").fetchone()
+            account, killed, last_seen = db.execute(
+                "SELECT account,killed,last_seen FROM safety WHERE id=1"
+            ).fetchone()
             if not identifier(account) or killed not in (0, 1):
                 raise ValueError
+            if last_seen:
+                seen_at = datetime.fromisoformat(last_seen)
+                if seen_at.tzinfo is None or seen_at > now:
+                    raise ValueError
             rows = db.execute("SELECT proposal,instrument,amount FROM reservations").fetchall()
             reservations = tuple((r[0], _id(r[1]), _amount(r[2])) for r in rows)
             if any(not identifier(r[0]) for r in reservations) or len(
@@ -251,6 +300,7 @@ def read_local_state(path: Path, *, now: datetime) -> LocalState:
             ) != len(reservations):
                 raise ValueError
             orders: dict[str, tuple[int | None, int, str, bool, str]] = {}
+            broker_intents: set[tuple[str, int]] = set()
             unresolved = 0
             tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             if "execution_orders" not in tables:
@@ -274,6 +324,10 @@ def read_local_state(path: Path, *, now: datetime) -> LocalState:
                 iid = _id(proposal["instrument_id"])
                 if broker_id is not None:
                     _id(broker_id)
+                    intent = (data["action"], broker_id)
+                    if intent in broker_intents:
+                        raise ValueError
+                    broker_intents.add(intent)
                 if state not in {
                     "proposed",
                     "risk-approved",
@@ -286,20 +340,26 @@ def read_local_state(path: Path, *, now: datetime) -> LocalState:
                     "unknown",
                 }:
                     raise ValueError
+                terminal_states = {"filled", "rejected", "cancelled"}
+                if (state in terminal_states and not terminal) or (
+                    terminal and state not in terminal_states | {"partially-filled"}
+                ):
+                    raise ValueError
                 if state in {"submitted", "unknown"} or (not terminal and state != "proposed"):
                     unresolved += 1
                 orders[proposal_id] = (broker_id, iid, state, bool(terminal), data["action"])
             baseline = db.execute(
-                "SELECT halted FROM days WHERE day=?", (now.astimezone(UTC).date().isoformat(),)
+                "SELECT equity,halted FROM days WHERE day=?",
+                (now.astimezone(UTC).date().isoformat(),),
             ).fetchone()
-            if baseline is not None and baseline[0] not in (0, 1):
+            if baseline is not None and (_amount(baseline[0]) <= 0 or baseline[1] not in (0, 1)):
                 raise ValueError
             result = LocalState(
                 account,
                 reservations,
                 orders,
                 bool(killed),
-                bool(baseline and baseline[0]),
+                bool(baseline and baseline[1]),
                 baseline is not None,
                 unresolved,
             )
@@ -311,6 +371,7 @@ def read_local_state(path: Path, *, now: datetime) -> LocalState:
         KeyError,
         AttributeError,
         ArithmeticError,
+        RecursionError,
     ):
         pass
     if result is None:
@@ -368,6 +429,8 @@ def diagnose(
         seen_broker: set[int] = set()
         for proposal, instrument, amount in local.reservations:
             match = local.orders.get(proposal)
+            if match and instrument != match[1]:
+                raise DiagnosticError("RESERVATION_INSTRUMENT_MISMATCH")
             if match and match[0] in observation.pending:
                 assert match[0] is not None
                 broker_id = match[0]
@@ -463,7 +526,14 @@ def main() -> int:
             observed_at=datetime.fromisoformat(args.observed_at),
             now=datetime.now(UTC),
         )
-    except (OSError, ValueError, TypeError, ArithmeticError, IncompleteDemoSnapshot):
+    except (
+        OSError,
+        ValueError,
+        TypeError,
+        ArithmeticError,
+        RecursionError,
+        IncompleteDemoSnapshot,
+    ):
         print('{"status":"blocked","code":"DIAGNOSTIC_INPUT_OR_STATE_REJECTED"}')
         return 1
     print(json.dumps(result.summary(), sort_keys=True))

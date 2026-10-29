@@ -13,7 +13,7 @@ deployment, paid services or trading activation is authorized. No leveraged rese
 The older phase proposals below are retained as design provenance, not a current completion claim.
 
 Verified baseline: main `f8f3d6d`; PR #25 remains open at `aa65a21d124e34ab6d75085cc57fa98c8906a267`.
-Only PR #25 was open at inspection. Its offline P&L scope is preserved. New work starts on
+Only PR #25 was open at the original inspection. Its offline P&L scope is preserved. New work starts on
 `feature/demo-broker-diagnostics` directly from that commit; PRs are stacked, never cherry-picked
 or treated as merged. Baseline local validation was 902 passing tests; current validation is
 recorded at each checkpoint below. Windows and hosted CI are separate evidence gaps.
@@ -56,7 +56,7 @@ simulation 0.078s). Tests cover UTC overflow sanitization, closed SQLite handles
 rejection of unrelated safety databases. See [NEWS_EVENTS.md](NEWS_EVENTS.md).
 Windows and hosted CI remain unverified; no paid access or authenticated calls were attempted.
 
-Next concrete task: review the dependent PRs in order, then run the same offline checks on Windows.
+The next owner review remains the dependent PR order, followed by the same offline checks on Windows.
 Separately authorized owner-operated read-only evidence collection is needed before further broker
 admission work. No first-order action follows automatically from these checkpoints.
 
@@ -64,7 +64,7 @@ admission work. No first-order action follows automatically from these checkpoin
 | --- | --- | --- |
 | Broker schema compatibility, full unfiltered responses and independently verified Demo identity | Current public OpenAPI plus deterministic P&L/aggregate tests; schema/example spelling differs, saved files do not prove original request/identity | Authoritative AccountSnapshot remains blocked. Owner may separately authorize a private read-only Demo workflow, retain fresh exact responses locally, and run the diagnostic; do not send raw account data to chat. |
 | Authoritative broker/local reservation handoff and cash-flow baseline | Cross-checked broker IDs/instruments against read-only local journal; retained all uncertain holds | Safe release/deduplication remains blocked. Review privately verified identity and cumulative execution evidence; never clear reservations or restart safety state to pass. |
-| Price-bounded order and observed stop/fill/idempotency semantics | Public v3 contract and mocked lifecycle regression; market-only open has no enforced maximum entry price | First owner-approved order remains blocked. Verify permitted contract and account behavior read-only before separately reviewing any exact-order authorization. |
+| Price-bounded order and observed stop/fill/idempotency semantics | Public v3 create documents limitIOC, but lookup lacks a limitRate echo and eligibility exposes no IOC flag; the implemented open remains market-only | First owner-approved order remains blocked. Verify permitted contract and account behavior read-only before separately reviewing any exact-order authorization. |
 | Qualified genuine intraday evidence | Existing replay gates retained; demonstrated all four synthetic budget/pipeline paths | Genuine-data shadow/live analysis remains deferred until truthful licensed point-in-time market/FX/cost/action/eligibility/earnings inputs qualify. No synthetic results count as performance evidence. |
 | Permitted feed acquisition and complete future earnings calendar | Saved Atom parsing, raw checksums, revision/as-of tests; actual earnings guard rejects unknown window | Source acquisition/display wiring remains deferred; future earnings admission blocked. Owner can import legitimately obtained public feed bytes locally, but absent filings never establish no earnings event. |
 | Windows and hosted CI | Full Linux checks at every code milestone; no Windows runtime, no Actions reruns under reported exhausted allowance | Platform/hosted verification remains open. Owner runs documented Windows offline commands; hosted checks await allowance restoration, without disabling or bypassing them. |
@@ -75,6 +75,49 @@ as real broker evidence. Future bounded autonomous Demo execution would require 
 approved policy change defining eligible accounts/instruments, spend and risk bounds, monitoring,
 revocation and recovery, plus separate security review of authorization. This task does not make
 that change or expose an approval bypass. A powered-off PC does not execute scheduled tasks.
+
+## Follow-up: connected local monitoring
+
+Verified follow-up baseline: PRs #25 → #26 → #27 → #28 remain open and unchanged at
+`aa65a21`, `4564a99`, `1572856`, `e3d6726`; main remains `f8f3d6d`.
+`feature/local-shadow-monitoring` starts directly from PR #28. It extends the same modules,
+without rewriting the stack, new credentials, endpoint activation or hosted-CI reruns.
+
+| Observable improvement | Existing integration / acceptance evidence | Status |
+| --- | --- | --- |
+| Broker per-instrument cash/margin/P&L/units reconciliation and temporal/journal consistency | Existing saved-response diagnostic → actual RiskEngine rejection; fractional, stale, contradictory and duplicate fixture tests | Implemented/tested: 72 diagnostic tests; authoritative broker evidence blocked |
+| Fair persisted recovery polling, immutable stored-ticket checks and close-time validation | Existing execution journal/coordinator; mocked restart and multi-intent regressions | Implemented/tested: 134 execution tests; all submission defaults disabled |
+| Browser view on 127.0.0.1, Windows launcher, daily/weekly Markdown/CSV and integrity-checked downloads | Existing shadow runs/reports; actual loopback HTTP tests, all four replay/budget paths, no mutation routes | Implemented/tested: 27 app + 33 HTTP tests; native Windows unavailable |
+| Archived news displayed alongside synthetic runs, with source clocks/revisions/unknown coverage | Existing news SQLite archive → read-only summary → escaped dashboard; corruption and as-of tests | Implemented/tested: 43 news tests; future earnings authority blocked |
+
+Follow-up validation (Linux, Python 3.12.14): **1126 tests passed** in 30.50s. Ruff lint,
+Ruff format (132 files), strict mypy (132 files), `pip check`, editable installation without
+build isolation, Hatchling wheel/sdist, rebuilding a wheel from sdist and wheel installation
+passed. Installed-wheel CLI help passed outside the checkout. All four actual shadow CLI runs
+(hourly/ORB × EUR500/EUR1000) completed with synthetic evidence labels. A launched CLI server
+served the dashboard, synthetic archived news and all 16 report downloads over loopback HTTP.
+The existing benchmark passed: 21 sessions × 78 bars, 10,000 model draws, replay p50 0.100s,
+p95 0.161s, model simulation 0.072s. No performance/profitability claim follows from fixtures.
+
+Graphical browser verification was attempted with installed Chromium and its sandbox enabled.
+It failed before rendering: `The SUID sandbox helper binary was found, but is not configured
+correctly` (`/usr/lib/chromium/chrome-sandbox`, expected root ownership/mode 4755); Crashpad also
+reported `--database is required`. No sandbox bypass, permission change or environment change
+was made. HTTP/HTML integration passed; graphical rendering and native Windows remain unverified.
+GitHub-hosted CI remains unverified under the reported exhausted allowance; no reruns or workflow
+changes were requested. Exact follow-up commit and PR are recorded by the commit/PR containing
+this checkpoint, with base `feature/offline-news-events` at `e3d6726`.
+
+Next concrete tasks: owner review of the PR stack, native Windows/hosted checks after allowance
+restoration, and separately authorized read-only broker response/identity validation. Continue
+blocking uncertain broker admission and unqualified historical/earnings evidence. No task here
+establishes first-order or autonomous trading readiness.
+
+The browser is a local reader. It cannot submit proposals, orders, approvals, switch risk controls
+or download market/news data. Current archived news is informational and never injected into a
+historical replay. Existing new-run claims remain at-most-once; a crashed running slot needs review,
+not silent replay. Corrupt exports/archives produce unavailable status and never become fresh evidence.
+No native Windows, PowerShell or Wine runtime is installed here; Windows behavior remains untested.
 
 ## 1. Direction and recommended decision
 

@@ -19,10 +19,13 @@ def run_once(store: Runs, pipeline: str, eur: int, *, now: datetime) -> str:
     """Claim before computation; exceptions leave a durable failed or running marker."""
     from datetime import UTC
 
+    if now.tzinfo is None:
+        raise ShadowError("INVALID_OR_MISSED_SLOT")
     identity = store.claim(pipeline, eur, now.astimezone(UTC).date(), now=now)
     destination = store.root / identity
     try:
         destination.mkdir(exist_ok=False)
+        dashboard(store, now=now)
         simulation = Simulation(initial_eur=Decimal(eur))
         result: Result
         if pipeline == "hourly":

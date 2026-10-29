@@ -443,3 +443,62 @@ Use a separate news archive; unrelated or incomplete SQLite schemas are rejected
 A filing feed is not a future earnings calendar. Coverage remains unknown and the existing
 Strategy Engine rejects it when complete earnings evidence is required. Source acquisition,
 instrument mapping and point-in-time verification remain separate work.
+
+## Local browser viewer and launcher
+
+Use the existing Python 3.12+ virtual environment and pinned dependencies; no credentials or
+network-data opt-in are needed. In PowerShell, from a trusted repository checkout, a **first run
+with a new isolated research root** is:
+
+```powershell
+.\scripts\start-shadow.ps1 -Initialize -RunFixtures
+```
+
+This explicitly initializes the new synthetic root, runs hourly/ORB at EUR500/EUR1000, then opens
+the browser on `http://127.0.0.1:8765`. It never replaces an existing journal. Subsequent launches:
+
+```powershell
+.\scripts\start-shadow.ps1
+# Optional existing public-news archive; absence/corruption is displayed as UNAVAILABLE.
+.\scripts\start-shadow.ps1 -NewsArchive .historical-data\news.sqlite
+```
+
+`-Root` selects an isolated research root; `-Port` chooses another local port; `-NoBrowser` keeps
+the viewer open without launching a browser. Ctrl+C stops the reader. Do not repeat `-RunFixtures`
+for an already claimed pipeline/budget/UTC-day slot; duplicate protection intentionally blocks.
+No tasks run while the PC is off. The existing Task Scheduler instructions apply to CLI runs.
+
+If local policy does not permit PowerShell scripts, use the Python commands directly. Do not
+change execution policy or bypass organizational restrictions:
+
+```powershell
+.\.venv\Scripts\python.exe -m etoro_demo_bot.shadow init --root .backtest-output\shadow
+.\.venv\Scripts\python.exe -m etoro_demo_bot.shadow run --root .backtest-output\shadow --pipeline hourly --eur 500
+.\.venv\Scripts\python.exe -m etoro_demo_bot.shadow run --root .backtest-output\shadow --pipeline orb --eur 1000
+.\.venv\Scripts\python.exe -m etoro_demo_bot.shadow serve --root .backtest-output\shadow --open-browser
+```
+
+Skip `init` when reopening existing state. An unavailable/corrupt journal is not permission to
+create a replacement. A manually supplied `--news-archive` is opened read-only; no feed fetch occurs.
+Refresh the browser page to update run and archive observations. Static `dashboard.html` remains
+usable without the server; it refreshes only when a command regenerates it.
+
+The viewer has no public bind option, tunnels, deployment or remote forwarding. It rejects foreign
+Host/Origin headers, cross-site fetches, non-GET/HEAD operations, unlisted files and symlinks. Only
+named exports from completed runs with verified local bundle checksums are downloadable; private
+state, raw journals, broker files and credential files are not served. Older summaries remain
+labelled legacy/unverified; they are not automatically rewritten or rerun. CSV/Markdown summaries
+retain explicit synthetic, currency, partial-coverage and cost-attribution limitations.
+
+This is a trusted-local-filesystem tool, not an authenticated multi-user web service. Other local
+processes may reach the reader; do not deploy it publicly or place secrets in generated reports.
+Checksum matching detects ordinary inconsistency, not a malicious administrator rewriting both
+data and checksums. Localhost in Codex Cloud is not a public browser URL on the owner's device.
+
+Native Windows and PowerShell execution remain unverified in the current Linux environment.
+Tests exercise real loopback HTTP, fail-closed archive handling and cross-platform file/SQLite
+semantics on Linux. Chromium graphical smoke was attempted but could not start because the
+installed SUID sandbox helper is misconfigured; its sandbox was not bypassed. After Actions allowance returns, retain all required checks and run the existing
+Ubuntu/Windows workflow on the reviewed heads; inspect both OS results before owner-approved merges.
+Review #25 → #26 → #27 → #28 → the follow-up PR, retargeting each child after its parent merges.
+A green workflow still does not prove broker compatibility or authorize a Demo order.

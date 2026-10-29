@@ -49,11 +49,33 @@ def test_existing_pipelines_end_to_end(tmp_path: Path, pipeline: str, eur: int) 
     )
     expected_fees += sum(D(str(t.get("commission", t.get("fee_usd", 0)))) for t in full["trades"])
     assert sum(D(p["attributed_fees_and_funding_usd"]) for p in summary["daily"]) == expected_fees
+    expected_pnl = sum(D(t.get("pnl", t.get("pnl_usd"))) for t in full["trades"])
+    assert sum(D(p["realized_exit_pnl_usd"]) for p in summary["daily"]) == expected_pnl
+    assert sum(p["exit_fill_count"] for p in summary["daily"]) == len(full["trades"])
     assert summary["metrics"]["trading_costs_usd"] >= 0
     assert summary["improvement_proposals"]
+    from etoro_demo_bot.shadow.reports import EXPORTS, load_summary
+
+    verified, integrity = load_summary(store.root / identity)
+    assert verified == summary and integrity.startswith("Local export checksums verified")
+    for filename in (*EXPORTS, "shadow-checksums.json"):
+        content = (store.root / identity / filename).read_bytes()
+        assert b"\r\n" not in content
+        content.decode("utf-8")
+    import csv
+
+    with (store.root / identity / "periods.csv").open(encoding="utf-8", newline="") as stream:
+        csv_rows = list(csv.DictReader(stream))
+    assert len(csv_rows) == len(summary["daily"]) + len(summary["weekly"])
+    assert csv_rows[0]["ending_equity"] == summary["daily"][0]["ending_equity"]
+    markdown = (store.root / identity / "daily.md").read_text(encoding="utf-8")
+    assert "SHADOW / SYNTHETIC" in markdown and "UNVERIFIED" in markdown
+    assert summary["daily"][0]["observed_start_at"] in markdown
     assert (store.root / identity / "state").is_dir()
     text = (store.root / "dashboard.html").read_text()
     assert "UNVERIFIED" in text and "broker execution disabled" in text
+    assert "Daily replay periods" in text and "Proposed experiments" in text
+    assert "daily.md" in text and "periods.csv" in text
     with pytest.raises(ShadowError, match="ALREADY_CLAIMED"):
         run_once(Runs(store.root), pipeline, eur, now=NOW)
 
@@ -256,7 +278,175 @@ def test_orb_proposal_risk_and_fill_failures_count_disjoint_stages() -> None:
         "entry_missed": 1,
         "unknown_cancelled_entries": 1,
     }
+    assert row["reason_counts"]["entry_cancelled: FILL_REVALIDATION"] == 1
+    assert row["reason_counts"]["proposal: UNSPECIFIED_REASON"] == 1
     assert recommendations(result)[1]["observation"].startswith("Journal contains 4")
     assert row["period_start_at"] == "2026-10-26T00:00:00+00:00"
     assert row["period_end_at_exclusive"] == "2026-11-02T00:00:00+00:00"
     assert row["coverage_status"] == "partial"
+
+
+@pytest.mark.parametrize(
+    "name", ("summary.json", "daily.md", "weekly.md", "periods.csv", "shadow-checksums.json")
+)
+def test_corrupt_exports_are_unavailable_and_never_reset_run(tmp_path: Path, name: str) -> None:
+    store = Runs.initialize(tmp_path / "shadow")
+    identity = run_once(store, "orb", 500, now=NOW)
+    path = store.root / identity / name
+    path.write_bytes(b"corrupt")
+    rows = store.rows()
+    dashboard(store, now=NOW)
+    text = (store.root / "dashboard.html").read_text(encoding="utf-8")
+    assert "REPORT UNAVAILABLE" in text
+    assert f'href="{identity}/' not in text
+    assert store.rows() == rows
+
+
+def test_legacy_report_remains_visible_with_unverified_export_integrity(tmp_path: Path) -> None:
+    store = Runs.initialize(tmp_path / "shadow")
+    identity = run_once(store, "hourly", 500, now=NOW)
+    path = store.root / identity / "summary.json"
+    data = json.loads(path.read_bytes())
+    del data["schema_version"]
+    path.write_text(json.dumps(data), encoding="utf-8")
+    dashboard(store, now=NOW)
+    text = (store.root / "dashboard.html").read_text(encoding="utf-8")
+    assert "LEGACY — export integrity unverified" in text
+    assert f'href="{identity}/summary.json"' not in text
+    assert f'href="{identity}/daily.md"' not in text
+
+
+def test_atomic_publish_failure_preserves_previous_view_and_removes_temp(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from etoro_demo_bot.shadow.reports import atomic_text
+
+    path = tmp_path / "dashboard.html"
+    path.write_text("previous complete view", encoding="utf-8")
+
+    def fail_replace(self: Path, target: Path) -> Path:
+        raise OSError("Synthetic replacement failure")
+
+    monkeypatch.setattr(Path, "replace", fail_replace)
+    with pytest.raises(OSError):
+        atomic_text(path, "new complete view")
+    assert path.read_text(encoding="utf-8") == "previous complete view"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["dashboard.html"]
+
+
+def test_incomplete_export_marks_failed_without_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from etoro_demo_bot.shadow import reports
+
+    store = Runs.initialize(tmp_path / "shadow")
+    original = reports.atomic_text
+
+    def fail_weekly(path: Path, content: str) -> None:
+        if path.name == "weekly.md":
+            raise OSError("Synthetic write failure")
+        original(path, content)
+
+    monkeypatch.setattr(reports, "atomic_text", fail_weekly)
+    with pytest.raises(OSError):
+        run_once(store, "orb", 500, now=NOW)
+    assert store.rows()[0][-1] == "failed"
+    text = (store.root / "dashboard.html").read_text(encoding="utf-8")
+    assert "Failed — preserved state requires review" in text
+    assert "summary.json" not in text
+    with pytest.raises(ShadowError, match="ALREADY_CLAIMED"):
+        run_once(store, "orb", 500, now=NOW)
+
+
+def test_interrupted_run_remains_visible_and_claimed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from etoro_demo_bot.shadow import app
+
+    store = Runs.initialize(tmp_path / "shadow")
+
+    def interrupted() -> Any:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(app, "orb_dataset", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        run_once(store, "orb", 500, now=NOW)
+    assert store.rows()[0][-1] == "running"
+    text = (store.root / "dashboard.html").read_text(encoding="utf-8")
+    assert "Active or interrupted" in text
+    with pytest.raises(ShadowError, match="ALREADY_CLAIMED"):
+        run_once(Runs(store.root), "orb", 500, now=NOW)
+
+
+def test_missing_uniqueness_constraint_is_blocked_without_database_writes(tmp_path: Path) -> None:
+    import sqlite3
+
+    root = tmp_path / "shadow"
+    root.mkdir()
+    path = root / "runs.sqlite"
+    db = sqlite3.connect(path)
+    db.execute(
+        "CREATE TABLE runs(id TEXT PRIMARY KEY,pipeline TEXT,eur INTEGER,slot TEXT,status TEXT)"
+    )
+    db.commit()
+    db.close()
+    before = path.read_bytes()
+    with pytest.raises(ShadowError, match="UNIQUENESS_INVALID"):
+        Runs(root).claim("orb", 500, NOW.date(), now=NOW)
+    assert path.read_bytes() == before
+
+
+def test_saved_news_rendering_is_escaped_and_not_replay_evidence(tmp_path: Path) -> None:
+    from etoro_demo_bot.news.archive import NewsItemSummary, NewsSummary
+
+    store = Runs.initialize(tmp_path / "shadow")
+    item = NewsItemSummary(
+        title="<script>alert(1)</script>",
+        form="8-K",
+        source_feed="SEC saved feed",
+        source_url="javascript:alert(1)",
+        published_at=NOW,
+        updated_at=NOW,
+        observed_at=NOW,
+        revision_sha256="0" * 64,
+        keyword_tags=("earnings",),
+    )
+    news = NewsSummary("AVAILABLE", NOW, NOW, (item,), 1, False)
+    dashboard(store, now=NOW, news=news)
+    text = (store.root / "dashboard.html").read_text(encoding="utf-8")
+    assert "<script>" not in text and "&lt;script&gt;" in text
+    assert 'href="javascript:' not in text
+    assert "earnings coverage UNKNOWN" in text
+    assert "never enters historical strategy decisions" in text
+    assert store.rows() == []
+
+
+def test_monitoring_state_connection_is_readonly(tmp_path: Path) -> None:
+    import sqlite3
+
+    store = Runs.initialize(tmp_path / "shadow")
+    identity = store.claim("orb", 500, NOW.date(), now=NOW)
+    before = (store.root / "runs.sqlite").read_bytes()
+    with store.connect(readonly=True) as db:
+        assert db.execute("PRAGMA query_only").fetchone()[0] == 1
+        with pytest.raises(sqlite3.OperationalError):
+            db.execute("DELETE FROM runs")
+    assert store.rows()[0][0] == identity
+    assert (store.root / "runs.sqlite").read_bytes() == before
+
+
+def test_csv_text_formulas_blocked_but_negative_decimal_values_remain_numeric() -> None:
+    import csv
+    import io
+
+    from etoro_demo_bot.shadow.reports import periods_csv
+
+    payload = {
+        "daily": [{"period": "=1+1", "net_equity_change": "-2.50", "decision_counts": {}}],
+        "weekly": [],
+    }
+    row = next(csv.DictReader(io.StringIO(periods_csv(payload))))
+    assert row["period"] == "'=1+1"
+    assert row["net_equity_change"] == "-2.50"
+    assert row["total_cost_usd"] == "unavailable"

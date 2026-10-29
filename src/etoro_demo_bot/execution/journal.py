@@ -1,11 +1,12 @@
 """Additive execution journal on the same SQLite database as risk reservations."""
 
+import hashlib
 import json
 import sqlite3
 from decimal import Decimal
 
 from ..risk import RiskStore
-from .models import OrderRecord, OrderState
+from .models import ExecutionError, OrderRecord, OrderState
 
 
 def install_journal(store: RiskStore) -> None:
@@ -59,8 +60,22 @@ def read_record(db: sqlite3.Connection, order_id: str) -> OrderRecord:
 
 
 def ticket_data(db: sqlite3.Connection, order_id: str) -> dict[str, object]:
-    row = db.execute("SELECT ticket FROM execution_orders WHERE id=?", (order_id,)).fetchone()
-    if row is None:
-        raise ValueError("Unknown journal entry.")
-    data: dict[str, object] = json.loads(row[0])
+    row = db.execute(
+        "SELECT ticket,digest,account FROM execution_orders WHERE id=?", (order_id,)
+    ).fetchone()
+    owner = db.execute("SELECT account FROM safety WHERE id=1").fetchone()
+    if (
+        row is None
+        or owner is None
+        or not isinstance(row[0], str)
+        or hashlib.sha256(row[0].encode()).hexdigest() != row[1]
+        or row[2] != owner[0]
+    ):
+        raise ExecutionError("JOURNAL_TICKET_INTEGRITY_UNCONFIRMED")
+    try:
+        data: dict[str, object] = json.loads(row[0])
+    except (ValueError, UnicodeError):
+        raise ExecutionError("JOURNAL_TICKET_INTEGRITY_UNCONFIRMED") from None
+    if not isinstance(data, dict) or data.get("account_id") != row[2]:
+        raise ExecutionError("JOURNAL_TICKET_INTEGRITY_UNCONFIRMED")
     return data
