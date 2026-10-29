@@ -1,4 +1,4 @@
-"""The only broker boundary: two exact GET routes, no redirects or mutations."""
+"""The only broker boundary: three exact GET routes, no redirects or mutations."""
 
 import random
 import threading
@@ -14,12 +14,21 @@ from .rate_limit import RateLimiter, retry_delay
 
 ORIGIN = "https://public-api.etoro.com"
 PORTFOLIO = "/api/v1/trading/info/demo/portfolio"
+PNL = "/api/v1/trading/info/demo/pnl"
 RATES = "/api/v2/market-data/rates"
-ALLOWED = frozenset({("GET", PORTFOLIO), ("GET", RATES)})
+ALLOWED = frozenset({("GET", PORTFOLIO), ("GET", PNL), ("GET", RATES)})
 
 
 class ApiError(Exception):
     """Sanitized errors: never retain requests, responses, or upstream exceptions."""
+
+
+class ReadDiagnostic(ApiError):
+    """A fixed safe error category; never captures upstream response content."""
+
+    def __init__(self, category: str) -> None:
+        self.category = category
+        super().__init__(category)
 
 
 class EndpointBlocked(ApiError):
@@ -66,6 +75,9 @@ class DemoClient:
     def portfolio(self) -> ApiResult:
         return self.request("GET", PORTFOLIO)
 
+    def pnl(self) -> ApiResult:
+        return self.request("GET", PNL)
+
     def rates(self, instrument_ids: list[int]) -> ApiResult:
         if not 1 <= len(instrument_ids) <= 1000 or any(
             type(i) is not int or i <= 0 for i in instrument_ids
@@ -90,7 +102,7 @@ class DemoClient:
             raise EndpointBlocked(
                 "Only explicitly allowed read-only Demo/data operations are allowed."
             )
-        if path == PORTFOLIO and params:
+        if path in {PORTFOLIO, PNL} and params:
             raise EndpointBlocked("Portfolio query overrides are blocked.")
         if path == RATES:
             ids = (params or {}).get("instrumentIds", "").split(",")
@@ -105,6 +117,7 @@ class DemoClient:
 
     def _get(self, path: str, params: dict[str, str] | None) -> ApiResult:
         for attempt in range(3):
+            timed_out = False
             failure = ""
             response: httpx.Response | None = None
             try:
@@ -119,6 +132,9 @@ class DemoClient:
                         "Accept": "application/json",
                     },
                 )
+            except httpx.TimeoutException:
+                failure = "Read request timed out."
+                timed_out = True
             except httpx.TransportError:
                 failure = "Read request failed after bounded retries."
             except (ValueError, httpx.HTTPError):
@@ -127,6 +143,8 @@ class DemoClient:
                 attempt = 2
             if failure:
                 if attempt == 2:
+                    if path == PNL:
+                        raise ReadDiagnostic("timeout" if timed_out else "network") from None
                     raise ApiError(failure)
                 self._limiter.defer(2**attempt + random.random())
                 continue
@@ -142,6 +160,18 @@ class DemoClient:
                 continue
             if status != 200 and not (path == RATES and status == 206):
                 response.close()
+                if path == PNL:
+                    if status in {401, 403}:
+                        category = "authorization"
+                    elif status == 404:
+                        category = "unsupported-endpoint"
+                    elif status == 429:
+                        category = "rate-limit"
+                    elif 500 <= status <= 599:
+                        category = "server"
+                    else:
+                        category = "unexpected-http"
+                    raise ReadDiagnostic(category)
                 raise ApiError(f"API read rejected (HTTP {status}); no response body retained.")
             data: Any = None
             try:
@@ -151,6 +181,8 @@ class DemoClient:
             finally:
                 response.close()
             if not isinstance(data, dict):
+                if path == PNL:
+                    raise ReadDiagnostic("invalid-response")
                 raise ApiError("API returned an invalid JSON object.")
             return ApiResult(data=data, partial=status == 206)
         raise ApiError("Read retry budget exhausted.")
