@@ -56,10 +56,11 @@ def prepare_risk_snapshot(
     exposures: tuple[Exposure, ...],
     observed_at: datetime,
 ) -> AccountSnapshot:
-    """Bridge independently reviewed observations to risk, never to execution.
+    """Build an explicitly untrusted risk observation, never admission.
 
-    Values must be supplied by a separate trusted adapter. No raw broker
-    response, guessed account identifiers, or stale observations are accepted.
+    The upstream evidence flags cannot prove broker source authenticity.
+    Completeness and cash-flow reconciliation remain false until a separately
+    reviewed authoritative attestation integration exists.
     """
     from datetime import UTC, timedelta
 
@@ -98,6 +99,6 @@ def prepare_risk_snapshot(
         exposures=exposures,
         observed_at=observed_at,
         demo=True,
-        complete=True,
-        cash_flows_reconciled=True,
+        complete=False,
+        cash_flows_reconciled=False,
     )
