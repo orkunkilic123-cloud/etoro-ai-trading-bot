@@ -2,7 +2,7 @@
 
 import argparse
 
-from .client import ApiError, DemoClient
+from .client import ApiError, DemoClient, ReadDiagnostic
 from .config import ConfigurationError, Credentials
 from .demo_balance import display_demo_balance
 from .demo_cash import IncompleteDemoSnapshot
@@ -24,7 +24,7 @@ def main() -> int:
                     "Demo portfolio GET succeeded. No orders submitted; "
                     "key scope relies on eToro enforcement."
                 )
-    except (ApiError, ConfigurationError, IncompleteDemoSnapshot):
+    except ReadDiagnostic as exc:\n        if args.command == "show-demo-balance":\n            print(f"Demo P&L diagnostic: {exc.category}. No account data shown.")\n        else:\n            print("Demo check unavailable.")\n        return 1\n    except (ApiError, ConfigurationError, IncompleteDemoSnapshot):
         if args.command == "show-demo-balance":
             print(
                 "Demo balance unavailable: Demo P&L data incomplete, rejected or unavailable; "
