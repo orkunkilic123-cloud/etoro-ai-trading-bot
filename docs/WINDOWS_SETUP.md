@@ -379,3 +379,19 @@ From a trusted Windows PowerShell checkout, run:
 ```
 
 These are offline checks and require **no broker API credentials**. The broker-evidence bridge never marks a snapshot as complete or reconciled merely from an asserted flag. Read [Phase 21 status](PHASE21_INTEGRATION.md) before a separate, owner-operated read-only account verification. There is no first-order command.
+
+## Phase 22 — offline Demo P&L integration
+
+Run without any broker credentials:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_phase22_pnl_risk_bridge.py
+.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
+.\.venv\Scripts\python.exe -m mypy
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m hatchling build
+```
+
+This is an offline test of P&L cash reservations, not a request for read or write credentials. The resulting risk snapshot remains incomplete by design. See [Phase 22 broker blockers](PHASE22_INTEGRATION.md). No first-order command is enabled.
