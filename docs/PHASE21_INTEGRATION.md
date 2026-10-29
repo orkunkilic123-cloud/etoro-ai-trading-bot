@@ -1,6 +1,6 @@
 # Phase 21 — risk observation bridge, limited and blocked for execution
 
-The existing `broker_evidence_gate` now offers a direct, offline mapping from independently reviewed USD account values and exposures to the **existing** `risk.models.AccountSnapshot` structure. It refuses missing evidence, mismatched types, nonpositive equity, impossible available cash, invalid exposures, and observations older than 60 seconds or in the future. It makes **no authenticated requests** and does not create an execution command. This is an internal bridge, not an eToro response-schema parser or proof of the source data.
+The existing `broker_evidence_gate` now offers a direct, offline mapping from independently reviewed USD account values and exposures to the **existing** `risk.models.AccountSnapshot` structure. It refuses missing evidence, mismatched types, nonpositive equity, impossible available cash, invalid exposures, and observations older than 60 seconds or in the future. The resulting snapshot explicitly retains `complete=False` and `cash_flows_reconciled=False`: user-supplied assertions cannot establish authoritative broker data, so existing Risk Manager checks deny risk admission. It makes **no authenticated requests** and does not create an execution command. This is an internal bridge, not an eToro response-schema parser or proof of the source data.
 
 ## API contract / strict release blocker
 
