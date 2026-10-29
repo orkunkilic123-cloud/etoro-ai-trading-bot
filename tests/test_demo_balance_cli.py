@@ -56,7 +56,7 @@ def test_invalid_credit_fails_closed(value: object) -> None:
         {"ordersForOpen": [{"mirrorID": 0, "amount": "NaN"}]},
         {"orders": [{}]},
         {"orders": "not an array"},
-        {"orders": [{"amount": 1100}]},
+        {"orders": [{"amount": 11000}]},
     ],
 )
 def test_invalid_orders_fail_closed(change: dict[str, object]) -> None:
