@@ -27,3 +27,11 @@ Before a future order, a separately reviewed trusted interface must show Demo ac
 ## Verification
 
 Run Python 3.12+ offline `python -m pytest`, `python -m ruff check .`, `python -m ruff format --check .`, `python -m mypy`, `python -m pip check` and `python -m hatchling build` with existing locked development dependencies. Verify Ubuntu and Windows GitHub Actions on the **final head SHA**. Until then, CI and overall phase completion remain unverified. Keep this PR draft; do not merge or activate trading.
+
+## Owner-operated read-only broker evidence verification
+
+The existing `etoro-demo check-demo` sends **one authenticated read-only portfolio GET**, and is not an order command. Run it only after explicit owner action in a trusted private environment, never from CI or autonomous agents. Verify key environment and Read permissions in the official eToro portal without exporting credentials. The success message alone cannot prove account balances or portfolio identity.
+
+In a private session, compare the documented Demo portfolio/P&L response field definitions to the eToro Demo interface. Independently reconcile account scope, cash and outstanding reservations, full position counts and instruments, instrument eligibility, current quotes, fees, minimum sizes, and UTC starting equity. If the official schema cannot map a field or any result is stale/partial, record **BLOCKED** and do not present the snapshot to the Risk Manager as complete. Do not paste raw account data or identifiers into PRs or CI logs. No order POSTs are part of this procedure.
+
+The public [eToro trading guide](https://builders.etoro.com/products/trading) and [Demo migration guidance](https://builders.etoro.com/blog/from-demo-to-production-trading-bot) use the **v2** unified Demo order route. The existing **v3** route was recorded in the repo's earlier operation-level OpenAPI audit; this does not prove current wire compatibility. Neither is approved for first-order dispatch in Phase 19. The new offline integration regression test confirms that a synthetic successful portfolio GET cannot unlock v2, v3 or Real routes. Existing execution lifecycle mocks must continue to pass; they are not evidence of a broker-approved order.
