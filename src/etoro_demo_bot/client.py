@@ -23,6 +23,14 @@ class ApiError(Exception):
     """Sanitized errors: never retain requests, responses, or upstream exceptions."""
 
 
+class ReadDiagnostic(ApiError):
+    """A fixed safe error category; never captures upstream response content."""
+
+    def __init__(self, category: str) -> None:
+        self.category = category
+        super().__init__(category)
+
+
 class EndpointBlocked(ApiError):
     """Operation not permitted by the immutable read-only policy."""
 
@@ -108,7 +116,7 @@ class DemoClient:
             return self._get(path, params)
 
     def _get(self, path: str, params: dict[str, str] | None) -> ApiResult:
-        for attempt in range(3):
+        for attempt in range(3):\n            timed_out = False
             failure = ""
             response: httpx.Response | None = None
             try:
@@ -146,7 +154,7 @@ class DemoClient:
                 continue
             if status != 200 and not (path == RATES and status == 206):
                 response.close()
-                raise ApiError(f"API read rejected (HTTP {status}); no response body retained.")
+                if path == PNL:\n                    category = (\n                        "authorization" if status in {401, 403} else\n                        "unsupported-endpoint" if status == 404 else\n                        "rate-limit" if status == 429 else\n                        "server" if 500 <= status <= 599 else\n                        "unexpected-http"\n                    )\n                    raise ReadDiagnostic(category)\n                raise ApiError(f"API read rejected (HTTP {status}); no response body retained.")
             data: Any = None
             try:
                 data = response.json()
@@ -155,6 +163,6 @@ class DemoClient:
             finally:
                 response.close()
             if not isinstance(data, dict):
-                raise ApiError("API returned an invalid JSON object.")
+                if path == PNL:\n                    raise ReadDiagnostic("invalid-response")\n                raise ApiError("API returned an invalid JSON object.")
             return ApiResult(data=data, partial=status == 206)
         raise ApiError("Read retry budget exhausted.")
