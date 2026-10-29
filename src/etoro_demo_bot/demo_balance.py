@@ -11,8 +11,15 @@ def display_demo_balance(data: Mapping[str, Any]) -> str:
     """Show verified P&L cash figures; do not infer total balance or equity."""
     if not isinstance(data, Mapping):
         raise IncompleteDemoSnapshot("Invalid Demo P&L response")
-    # Official guide documents these fields on the P&L response itself.
-    cash = normalize_demo_cash(data)
+    # The documented P&L schema nests cash fields in clientPortfolio.
+    # A flat payload is retained only for backwards-compatible research fixtures.
+    if "clientPortfolio" in data:
+        portfolio = data["clientPortfolio"]
+        if not isinstance(portfolio, Mapping):
+            raise IncompleteDemoSnapshot("response", "incompatible structure")
+        cash = normalize_demo_cash(portfolio)
+    else:
+        cash = normalize_demo_cash(data)
     reserved = cash.reserved_open + cash.reserved_orders
 
     # Values in the P&L cash formula are USD only. This does not establish
