@@ -116,7 +116,8 @@ class DemoClient:
             return self._get(path, params)
 
     def _get(self, path: str, params: dict[str, str] | None) -> ApiResult:
-        for attempt in range(3):\n            timed_out = False
+        for attempt in range(3):
+            timed_out = False
             failure = ""
             response: httpx.Response | None = None
             try:
@@ -131,6 +132,9 @@ class DemoClient:
                         "Accept": "application/json",
                     },
                 )
+            except httpx.TimeoutException:
+                failure = "Read request timed out."
+                timed_out = True
             except httpx.TransportError:
                 failure = "Read request failed after bounded retries."
             except (ValueError, httpx.HTTPError):
@@ -139,6 +143,8 @@ class DemoClient:
                 attempt = 2
             if failure:
                 if attempt == 2:
+                    if path == PNL:
+                        raise ReadDiagnostic("timeout" if timed_out else "network") from None
                     raise ApiError(failure)
                 self._limiter.defer(2**attempt + random.random())
                 continue
@@ -154,7 +160,16 @@ class DemoClient:
                 continue
             if status != 200 and not (path == RATES and status == 206):
                 response.close()
-                if path == PNL:\n                    category = (\n                        "authorization" if status in {401, 403} else\n                        "unsupported-endpoint" if status == 404 else\n                        "rate-limit" if status == 429 else\n                        "server" if 500 <= status <= 599 else\n                        "unexpected-http"\n                    )\n                    raise ReadDiagnostic(category)\n                raise ApiError(f"API read rejected (HTTP {status}); no response body retained.")
+                if path == PNL:
+                    category = (
+                        "authorization" if status in {401, 403} else
+                        "unsupported-endpoint" if status == 404 else
+                        "rate-limit" if status == 429 else
+                        "server" if 500 <= status <= 599 else
+                        "unexpected-http"
+                    )
+                    raise ReadDiagnostic(category)
+                raise ApiError(f"API read rejected (HTTP {status}); no response body retained.")
             data: Any = None
             try:
                 data = response.json()
@@ -163,6 +178,8 @@ class DemoClient:
             finally:
                 response.close()
             if not isinstance(data, dict):
-                if path == PNL:\n                    raise ReadDiagnostic("invalid-response")\n                raise ApiError("API returned an invalid JSON object.")
+                if path == PNL:
+                    raise ReadDiagnostic("invalid-response")
+                raise ApiError("API returned an invalid JSON object.")
             return ApiResult(data=data, partial=status == 206)
         raise ApiError("Read retry budget exhausted.")
