@@ -5,7 +5,9 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-FIELDS = frozenset({"response", "credit", "ordersForOpen", "orders", "mirrorID", "amount", "availableCash"})
+FIELDS = frozenset(
+    {"response", "credit", "ordersForOpen", "orders", "mirrorID", "amount", "availableCash"}
+)
 
 
 class IncompleteDemoSnapshot(ValueError):
