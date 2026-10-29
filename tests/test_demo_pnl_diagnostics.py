@@ -88,3 +88,24 @@ def test_cli_response_schema_category(
     output = capsys.readouterr().out
     assert "incomplete-or-incompatible-data" in output
     assert "PRIVATE_SYNTHETIC_RESPONSE" not in output
+
+
+
+def test_configuration_failure_is_distinct_from_schema_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from etoro_demo_bot.cli import main
+    from etoro_demo_bot.config import ConfigurationError
+
+    monkeypatch.setattr(sys, "argv", ["etoro-demo", "show-demo-balance"])
+
+    def invalid(cls: type[Credentials]) -> Credentials:
+        raise ConfigurationError("synthetic-secret-not-for-output")
+
+    monkeypatch.setattr(Credentials, "from_environment", classmethod(invalid))
+    assert main() == 1
+    output = capsys.readouterr().out
+    assert "configuration invalid" in output
+    assert "incomplete-or-incompatible-data" not in output
+    assert "synthetic-secret-not-for-output" not in output
