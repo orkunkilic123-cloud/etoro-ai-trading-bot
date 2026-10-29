@@ -24,11 +24,17 @@ def main() -> int:
                     "Demo portfolio GET succeeded. No orders submitted; "
                     "key scope relies on eToro enforcement."
                 )
-    except ReadDiagnostic as exc:\n        if args.command == "show-demo-balance":\n            print(f"Demo P&L diagnostic: {exc.category}. No account data shown.")\n        else:\n            print("Demo check unavailable.")\n        return 1\n    except (ApiError, ConfigurationError, IncompleteDemoSnapshot):
+    except ReadDiagnostic as exc:
+        if args.command == "show-demo-balance":
+            print(f"Demo P&L diagnostic: {exc.category}. No account data shown.")
+        else:
+            print("Demo check unavailable.")
+        return 1
+    except (ApiError, ConfigurationError, IncompleteDemoSnapshot):
         if args.command == "show-demo-balance":
             print(
-                "Demo balance unavailable: Demo P&L data incomplete, rejected or unavailable; "
-                "no financial amount is inferred."
+                "Demo P&L diagnostic: incomplete-or-incompatible-data or configuration. "
+                "No account data shown."
             )
         else:
             print("Demo check unavailable: credentials or API read failed.")
