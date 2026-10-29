@@ -249,6 +249,14 @@ class ExecutionEngine:
                     or datetime.fromisoformat(auth[0]) <= self.clock()
                 ):
                     raise ExecutionError("AUTHORIZATION_EXPIRED_BEFORE_DISPATCH")
+                # Other workers can discover uncertainty between preparation and dispatch.
+                # Exclude only this order's durable may-have-been-sent marker.
+                if db.execute(
+                    "SELECT 1 FROM execution_orders WHERE id<>? "
+                    "AND state IN ('submitted','unknown') LIMIT 1",
+                    (order_id,),
+                ).fetchone():
+                    raise ExecutionError("UNRESOLVED_ORDER_BLOCKS_EXECUTION")
                 validate_eligibility(
                     ticket,
                     eligibility,
@@ -339,9 +347,9 @@ class ExecutionEngine:
                     OrderState.RISK_APPROVED,
                 }:
                     return record
-                ticket = ticket_data(db, order_id)
-                self.client.confirm(str(ticket["account_id"]), self.clock())
                 try:
+                    ticket = ticket_data(db, order_id)
+                    self.client.confirm(str(ticket["account_id"]), self.clock())
                     if ticket["action"] == "close":
                         if record.broker_id is None:
                             raise ExecutionError("CLOSE_ID_REQUIRES_MANUAL_RECONCILIATION")
@@ -361,6 +369,7 @@ class ExecutionEngine:
                         ticket,
                         self.client.identity,
                         record,
+                        observed_at=self.clock(),
                     )
                     transition(db, order_id, state)
                     db.execute(
@@ -384,6 +393,9 @@ class ExecutionEngine:
                 r[0]
                 for r in db.execute("""SELECT id FROM execution_orders
                 WHERE state IN ('submitted','pending','partially-filled','unknown') AND terminal=0
-                ORDER BY rowid""")
+                ORDER BY (SELECT MAX(sequence) FROM execution_events
+                          WHERE order_id=execution_orders.id), rowid""")
             ]
+        # A successful/uncertain poll appends a journal event, moving that order to the back.
+        # Throttled polls append nothing. This survives restart without resetting broker quotas.
         return [self.reconcile(order_id) for order_id in ids]

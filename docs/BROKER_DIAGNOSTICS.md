@@ -30,6 +30,14 @@ SHA-256: `549e77e8f37dc167dfb6295e4771faf1f9bb71f62d0e925109cd6aa9a5d299a0`.
 - Per-instrument `netCurrentExposureAccountCurrency` from
   `TradingPortfolioDemoApi_AggregatedPortfolioInstrumentAggregate` must exactly equal the sum of
   supported P&L positions' account-currency exposure. Missing, extra or duplicate instruments block.
+  When supplied, `totalMarginAccountCurrency`, `accountCurrencyReturn`, and `netUnits` must agree
+  with the separately summed position margins, account-currency P&L and units for that instrument.
+  The documented `liquidationValueAccountCurrency = totalMarginAccountCurrency +
+  accountCurrencyReturn` is also checked when supplied. An offsetting error on two instruments
+  cannot hide behind a correct account total. Missing optional fields grant no completeness claim;
+  null, float or contradictory supplied fields block. Negative P&L is retained without rounding.
+  A supplied position `unrealizedPnL.marginInAccountCurrency` must agree with the position's USD
+  `amount` for this USD-only subset. These fields/formula are in the same pinned schema above.
 
 The previous P&L cash normalizer is reused. Aggregate available cash, balance, P&L and margin must
 agree with the independently parsed P&L values. No invented `amount + PnL` equity field is used:
@@ -49,8 +57,14 @@ Position IDs and pending order IDs must be unique. One broker customer ID must a
 and the aggregate response. Missing/nullable P&L calculations, non-USD account currency, wrong
 settlement/direction/leverage, nonfinite amounts, missing fields, stale/future timestamps or
 inconsistent sums block. The observation and all provided calculation times must be aware and
-no older than 60 seconds. Input files are limited to 4 MiB each, arrays to 10,000 items; duplicate
-JSON keys and binary floating-point monetary inputs are rejected.
+no older than 60 seconds. A position/aggregate calculation cannot postdate the stated response
+observation, even if both are individually recent; equivalent timezone offsets compare as instants.
+Pending orders must have a strictly positive USD amount: a zero amount with units cannot be
+converted into a safe cash hold without verified pricing/conversion evidence. The existing cash
+formula is not replaced with an inferred units valuation. Input files are limited to 4 MiB each,
+arrays to 10,000 items; duplicate JSON keys, excessive JSON nesting and binary floating-point
+monetary inputs are rejected. Monetary sums use isolated Decimal precision, including multiple
+fractional positions in one instrument.
 
 An unfiltered full response is required; omission of fields, filters/pagination or unsupported
 activities cannot be interpreted as an empty account. The payloads alone cannot prove the actual
@@ -60,13 +74,19 @@ are not independent evidence. AccountSnapshot explicitly remains `demo=False`, `
 `cash_flows_reconciled=False`; the actual RiskEngine returns INVALID_ACCOUNT before opening any
 write transaction. The broker-reported CID is compared internally but never printed or treated
 as a verified binding to the local account ID.
+Settlement ID 1 plus leverage 1 establishes only the reported position fields: it does not prove
+that an ETF/product is itself unleveraged or eligible for a future order. Product-level eligibility
+and independent underlying-asset evidence remain separate unresolved requirements.
 
 ## Existing journal reconciliation boundary
 
 SQLite opens with `mode=ro`, `query_only=ON` and a consistent read transaction. Missing, corrupt or
 unsupported state blocks; no initialization/migration/reset occurs. The connection is explicitly
 closed for Windows compatibility. The diagnostic validates local account ownership, stored ticket
-checksum, proposal/instrument identity, order states and all existing reservation amounts.
+checksum, proposal/instrument identity, order states and all existing reservation amounts. It also
+rejects invalid daily opening equity, a future/naive stored risk clock, impossible state/terminal
+combinations and multiple local intents claiming the same action and broker order ID. These checks
+apply even when no broker pending order overlaps. A valid terminal partial fill keeps its hold.
 
 Exact broker-order-ID and instrument overlap is reported only as a **potential overlap**. A local
 execution ticket lacks an independently established binding to the broker CID, so this is not

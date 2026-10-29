@@ -145,3 +145,18 @@ The [offline news adapter](docs/NEWS_EVENTS.md) imports owner-saved SEC Atom byt
 checksummed local archive with revision history and as-of queries. It separates publication,
 update and observation times from simple keyword tags. It never treats missing filings as
 complete earnings coverage and never downloads stories or changes strategy decisions.
+
+### Browser dashboard and Windows launcher
+
+The existing shadow application now has a read-only local browser viewer and daily/weekly
+Markdown/CSV exports. From the configured Python environment:
+
+```powershell
+python -m etoro_demo_bot.shadow serve --root .backtest-output\shadow --open-browser
+```
+
+Or, for a **new isolated synthetic research root**, run
+`.\scripts\start-shadow.ps1 -Initialize -RunFixtures`; later launches omit those switches.
+The viewer binds only to `127.0.0.1`, exposes no order controls or raw journals, and can optionally
+show an existing saved-news archive with `--news-archive .historical-data\news.sqlite`.
+Read [Windows startup and browser boundaries](docs/WINDOWS_SETUP.md#local-browser-viewer-and-launcher).

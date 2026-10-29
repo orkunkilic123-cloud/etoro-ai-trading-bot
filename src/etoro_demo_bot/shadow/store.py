@@ -29,13 +29,43 @@ class Runs:
         return cls(root)
 
     @contextmanager
-    def connect(self) -> Iterator[sqlite3.Connection]:
+    def connect(self, *, readonly: bool = False) -> Iterator[sqlite3.Connection]:
         # Opening a missing journal must never silently recreate it.
+        mode = "ro" if readonly else "rw"
         db = sqlite3.connect(
-            (self.root / "runs.sqlite").resolve().as_uri() + "?mode=rw", uri=True, timeout=5
+            (self.root / "runs.sqlite").resolve().as_uri() + "?mode=" + mode, uri=True, timeout=5
         )
         try:
-            db.execute("PRAGMA synchronous=FULL")
+            if readonly:
+                db.execute("PRAGMA query_only=ON")
+            objects = db.execute(
+                "SELECT name,type FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'"
+            ).fetchall()
+            if objects != [("runs", "table")]:
+                raise ShadowError("RUN_SCHEMA_INVALID")
+            columns = db.execute("PRAGMA table_info(runs)").fetchall()
+            if [(row[1], row[2], row[5]) for row in columns] != [
+                ("id", "TEXT", 1),
+                ("pipeline", "TEXT", 0),
+                ("eur", "INTEGER", 0),
+                ("slot", "TEXT", 0),
+                ("status", "TEXT", 0),
+            ]:
+                raise ShadowError("RUN_SCHEMA_INVALID")
+            unique_columns = []
+            for row in db.execute("PRAGMA index_list(runs)"):
+                if row[2] and not row[4]:
+                    # Table-valued PRAGMA accepts a parameter, never interpolate schema names.
+                    unique_columns.append(
+                        tuple(
+                            c[0]
+                            for c in db.execute("SELECT name FROM pragma_index_info(?)", (row[1],))
+                        )
+                    )
+            if ("pipeline", "eur", "slot") not in unique_columns:
+                raise ShadowError("RUN_UNIQUENESS_INVALID")
+            if not readonly:
+                db.execute("PRAGMA synchronous=FULL")
             with db:
                 yield db
         finally:
@@ -93,5 +123,5 @@ class Runs:
                 raise ShadowError("RUN_STATE_CONFLICT")
 
     def rows(self) -> list[tuple[str, str, int, str, str]]:
-        with self.connect() as db:
+        with self.connect(readonly=True) as db:
             return list(db.execute("SELECT id,pipeline,eur,slot,status FROM runs ORDER BY slot,id"))

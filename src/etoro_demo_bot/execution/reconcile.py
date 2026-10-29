@@ -1,5 +1,6 @@
 """Strict documented status interpretation; partial terminal outcomes retain exposure."""
 
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
@@ -12,6 +13,8 @@ def reconcile_response(
     ticket: dict[str, Any],
     identity: DemoIdentity,
     record: OrderRecord,
+    *,
+    observed_at: datetime | None = None,
 ) -> tuple[OrderState, bool, int, Decimal, int]:
     p = ticket["proposal"]
     units = Decimal(p["units"])
@@ -49,10 +52,33 @@ def reconcile_response(
             if position_id in seen:
                 raise ExecutionError("DUPLICATE_EXECUTION")
             seen.add(position_id)
-            if item.get("occurred") is not None:
-                if number(item.get("rate")) <= 0:
-                    raise ExecutionError("INVALID_EXECUTION_RATE")
-                total += number(item.get("units"))
+            occurred, rate, quantity = item.get("occurred"), item.get("rate"), item.get("units")
+            if occurred is None:
+                # The documented units/rate describe executions, not requested close size.
+                # An incomplete execution must not be silently treated as zero execution.
+                if (rate is not None and number(rate) != 0) or (
+                    quantity is not None and number(quantity) != 0
+                ):
+                    raise ExecutionError("INCOMPLETE_EXECUTION_EVIDENCE")
+                continue
+            try:
+                if not isinstance(occurred, str):
+                    raise ValueError
+                executed_at = datetime.fromisoformat(occurred)
+                if (
+                    executed_at.tzinfo is None
+                    or executed_at.utcoffset() is None
+                    or observed_at is None
+                    or observed_at.tzinfo is None
+                    or observed_at.utcoffset() is None
+                    or executed_at > observed_at
+                ):
+                    raise ValueError
+            except ValueError:
+                raise ExecutionError("INVALID_EXECUTION_TIME") from None
+            if number(rate) <= 0 or number(quantity) <= 0:
+                raise ExecutionError("INVALID_EXECUTION_QUANTITY_OR_RATE")
+            total += number(quantity)
     else:
         asset = data.get("asset", {})
         if (

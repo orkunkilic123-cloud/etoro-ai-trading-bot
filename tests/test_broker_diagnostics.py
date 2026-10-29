@@ -5,6 +5,7 @@ import hashlib
 import json
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal as D
+from decimal import Inexact, Rounded, localcontext
 from pathlib import Path
 from typing import Any
 
@@ -328,3 +329,267 @@ def test_cli_help_needs_no_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(SystemExit) as error:
         main()
     assert error.value.code == 0
+
+
+@pytest.mark.parametrize("source", ["position", "aggregate"])
+def test_calculation_cannot_postdate_saved_response(tmp_path: Path, source: str) -> None:
+    p, a = samples()
+    observed = NOW - timedelta(seconds=30)
+    p["clientPortfolio"]["positions"][0]["unrealizedPnL"]["timestamp"] = observed.isoformat()
+    a["timestamp"] = observed.isoformat()
+    if source == "position":
+        p["clientPortfolio"]["positions"][0]["unrealizedPnL"]["timestamp"] = NOW.isoformat()
+    else:
+        a["timestamp"] = NOW.isoformat()
+    path = tmp_path / "risk.sqlite"
+    state(path)
+    before = path.read_bytes()
+    with pytest.raises(DiagnosticError):
+        diagnose(p, path, aggregate=a, observed_at=observed, now=NOW)
+    assert path.read_bytes() == before
+
+
+def test_same_instant_offset_and_freshness_boundary(tmp_path: Path) -> None:
+    p, a = samples()
+    p["clientPortfolio"]["positions"][0]["unrealizedPnL"]["timestamp"] = "2026-10-29T12:59:00+01:00"
+    a["timestamp"] = "2026-10-29T07:59:00-04:00"
+    path = tmp_path / "risk.sqlite"
+    state(path)
+    result = diagnose(p, path, aggregate=a, observed_at=NOW - timedelta(seconds=60), now=NOW)
+    assert result.decision.reasons == ("INVALID_ACCOUNT",)
+
+
+@pytest.mark.parametrize("collection", ["orders", "ordersForOpen"])
+def test_units_order_without_positive_cash_allocation_blocks(collection: str) -> None:
+    p, _ = samples()
+    order = p["clientPortfolio"]["ordersForOpen"].pop()
+    order.update(amount="0", units="1", amountInUnits="1")
+    p["clientPortfolio"][collection].append(order)
+    with pytest.raises(DiagnosticError):
+        parse_pnl(p, observed_at=NOW, now=NOW)
+
+
+def instrument_samples() -> tuple[dict[str, Any], dict[str, Any]]:
+    p, a = samples()
+    position = copy.deepcopy(p["clientPortfolio"]["positions"][0])
+    position.update(positionID=12, instrumentID=2, amount="300", units="3")
+    position["unrealizedPnL"].update(pnL="-20", exposureInAccountCurrency="280")
+    p["clientPortfolio"]["positions"].append(position)
+    p["clientPortfolio"]["unrealizedPnL"] = "-10"
+    a["accountTotals"].update(
+        accountTotalUsedMargin="600", accountCurrentPnl="-10", accountTotalValue="1490"
+    )
+    a["instrumentAggregates"][0].update(
+        totalMarginAccountCurrency="200",
+        accountCurrencyReturn="10",
+        netUnits="2",
+        liquidationValueAccountCurrency="210",
+    )
+    a["instrumentAggregates"].append(
+        {
+            "instrumentId": 2,
+            "netCurrentExposureAccountCurrency": "280",
+            "totalMarginAccountCurrency": "300",
+            "accountCurrencyReturn": "-20",
+            "netUnits": "3",
+            "liquidationValueAccountCurrency": "280",
+        }
+    )
+    return p, a
+
+
+def test_verified_instrument_sums_preserve_losses_and_separate_exposures(tmp_path: Path) -> None:
+    p, a = instrument_samples()
+    path = tmp_path / "risk.sqlite"
+    state(path)
+    result = diagnose(p, path, aggregate=a, observed_at=NOW, now=NOW)
+    assert result.snapshot.equity == D(1490)
+    assert [(item.instrument_id, item.notional) for item in result.snapshot.exposures] == [
+        (1, D(210)),
+        (2, D(280)),
+    ]
+    assert result.decision.reasons == ("INVALID_ACCOUNT",)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "totalMarginAccountCurrency",
+        "accountCurrencyReturn",
+        "netUnits",
+        "liquidationValueAccountCurrency",
+    ],
+)
+@pytest.mark.parametrize("invalid", ["offsetting_error", "null", "float"])
+def test_per_instrument_totals_cannot_hide_in_account_totals(
+    tmp_path: Path, field: str, invalid: str
+) -> None:
+    p, a = instrument_samples()
+    first, second = a["instrumentAggregates"]
+    if invalid == "offsetting_error":
+        first[field] = D(first[field]) + 1
+        second[field] = D(second[field]) - 1
+    else:
+        first[field] = None if invalid == "null" else float(first[field])
+    path = tmp_path / "risk.sqlite"
+    state(path)
+    with pytest.raises(DiagnosticError):
+        diagnose(p, path, aggregate=a, observed_at=NOW, now=NOW)
+
+
+def test_fractional_multi_position_sums_are_exact_under_hostile_decimal_context(
+    tmp_path: Path,
+) -> None:
+    p, a = samples()
+    first = p["clientPortfolio"]["positions"][0]
+    first.update(amount="0.123456789123", units="0.012345678912")
+    first["unrealizedPnL"].update(pnL="-0.000000000001", exposureInAccountCurrency="0.123456789122")
+    second = copy.deepcopy(first)
+    second.update(positionID=12, amount="0.876543210877", units="0.087654321088")
+    second["unrealizedPnL"].update(pnL="0.000000000002", exposureInAccountCurrency="0.876543210879")
+    p["clientPortfolio"]["positions"].append(second)
+    p["clientPortfolio"]["unrealizedPnL"] = "0.000000000001"
+    a["accountTotals"].update(
+        accountTotalUsedMargin="101",
+        accountCurrentPnl="0.000000000001",
+        accountTotalValue="1001.000000000001",
+    )
+    a["instrumentAggregates"][0].update(
+        netCurrentExposureAccountCurrency="1.000000000001",
+        totalMarginAccountCurrency="1",
+        accountCurrencyReturn="0.000000000001",
+        netUnits="0.1",
+        liquidationValueAccountCurrency="1.000000000001",
+    )
+    path = tmp_path / "risk.sqlite"
+    state(path)
+    with localcontext() as context:
+        context.prec = 2
+        context.traps[Inexact] = context.traps[Rounded] = True
+        result = diagnose(p, path, aggregate=a, observed_at=NOW, now=NOW)
+    assert result.position_count == 2
+    assert result.snapshot.exposures[0].positions == 2
+    assert result.snapshot.exposures[0].notional == D("1.000000000001")
+    assert result.snapshot.equity == D("1001.000000000001")
+    assert not result.decision.passed
+
+
+@pytest.mark.parametrize("margin", [None, "199", 200.0])
+def test_supplied_position_account_margin_must_agree(margin: object) -> None:
+    p, _ = samples()
+    p["clientPortfolio"]["positions"][0]["unrealizedPnL"]["marginInAccountCurrency"] = margin
+    with pytest.raises(DiagnosticError):
+        parse_pnl(p, observed_at=NOW, now=NOW)
+
+
+@pytest.mark.parametrize("equity", ["0", "-1", "NaN", "1e1000"])
+def test_invalid_existing_daily_baseline_is_not_reported_as_valid(
+    tmp_path: Path, equity: str
+) -> None:
+    p, a = samples()
+    path = tmp_path / "risk.sqlite"
+    store = state(path)
+    with store.transaction() as db:
+        db.execute("UPDATE days SET equity=?", (equity,))
+    before = path.read_bytes()
+    with pytest.raises(DiagnosticError, match="LOCAL_SAFETY"):
+        diagnose(p, path, aggregate=a, observed_at=NOW, now=NOW)
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("seen", ["invalid", "2026-10-29T12:00:00", "2026-10-29T12:00:01+00:00"])
+def test_invalid_or_rollback_local_clock_blocks(tmp_path: Path, seen: str) -> None:
+    p, a = samples()
+    path = tmp_path / "risk.sqlite"
+    store = state(path)
+    with store.transaction() as db:
+        db.execute("UPDATE safety SET last_seen=?", (seen,))
+    with pytest.raises(DiagnosticError, match="LOCAL_SAFETY"):
+        diagnose(p, path, aggregate=a, observed_at=NOW, now=NOW)
+
+
+@pytest.mark.parametrize("order_state,terminal", [("filled", 0), ("unknown", 1), ("pending", 1)])
+def test_contradictory_local_lifecycle_without_broker_overlap_blocks(
+    tmp_path: Path, order_state: str, terminal: int
+) -> None:
+    p, a = samples()
+    path = tmp_path / "risk.sqlite"
+    store = state(path, broker_id=None)
+    with store.transaction() as db:
+        db.execute("UPDATE execution_orders SET state=?,terminal=?", (order_state, terminal))
+    with pytest.raises(DiagnosticError, match="LOCAL_SAFETY"):
+        diagnose(p, path, aggregate=a, observed_at=NOW, now=NOW)
+
+
+def test_duplicate_local_broker_intents_block_without_reservation_overlap(tmp_path: Path) -> None:
+    p, a = samples()
+    path = tmp_path / "risk.sqlite"
+    store = state(path, broker_id=999)
+    with store.transaction() as db:
+        ticket = json.loads(db.execute("SELECT ticket FROM execution_orders").fetchone()[0])
+        ticket["proposal"]["proposal_id"] = "p2"
+        raw = json.dumps(ticket)
+        db.execute(
+            "INSERT INTO execution_orders(id,account,digest,ticket,reference,state,broker_id) "
+            "VALUES(?,?,?,?,?,?,?)",
+            (
+                "o2",
+                "synthetic-local-account",
+                hashlib.sha256(raw.encode()).hexdigest(),
+                raw,
+                "second-reference",
+                "unknown",
+                999,
+            ),
+        )
+    with pytest.raises(DiagnosticError, match="LOCAL_SAFETY"):
+        diagnose(p, path, aggregate=a, observed_at=NOW, now=NOW)
+
+
+def test_terminal_partial_fill_without_broker_pending_retains_local_hold(tmp_path: Path) -> None:
+    p, a = samples()
+    path = tmp_path / "risk.sqlite"
+    store = state(path, broker_id=999)
+    with store.transaction() as db:
+        db.execute("UPDATE execution_orders SET state='partially-filled',terminal=1")
+    before = path.read_bytes()
+    result = diagnose(p, path, aggregate=a, observed_at=NOW, now=NOW)
+    assert result.snapshot.available_balance == D(780)
+    assert result.unmatched_reservations == 1
+    assert not result.decision.passed
+    assert path.read_bytes() == before
+
+
+def test_unmatched_reservation_instrument_mismatch_blocks(tmp_path: Path) -> None:
+    p, a = samples()
+    path = tmp_path / "risk.sqlite"
+    store = state(path, broker_id=None)
+    with store.transaction() as db:
+        db.execute("UPDATE reservations SET instrument=2")
+    with pytest.raises(DiagnosticError, match="RESERVATION_INSTRUMENT"):
+        diagnose(p, path, aggregate=a, observed_at=NOW, now=NOW)
+
+
+def test_cli_deeply_nested_json_is_sanitized(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "SYNTHETIC_PRIVATE_NAME.json"
+    path.write_bytes(b"[" * 2000 + b"0" + b"]" * 2000)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "broker_diagnostics",
+            "--pnl-file",
+            str(path),
+            "--aggregate-file",
+            str(path),
+            "--risk-state",
+            str(path),
+            "--observed-at",
+            NOW.isoformat(),
+        ],
+    )
+    assert main() == 1
+    captured = capsys.readouterr()
+    assert "blocked" in captured.out and "SYNTHETIC" not in captured.out
+    assert not captured.err

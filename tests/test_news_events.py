@@ -256,3 +256,117 @@ def test_unrelated_or_partial_database_is_unchanged(tmp_path: Path, table: str) 
     with pytest.raises(NewsError, match="UNRELATED_OR_INCOMPLETE_ARCHIVE_SCHEMA"):
         NewsArchive(path)
     assert path.read_bytes() == before
+
+
+def test_read_only_typed_summary_integrity_asof_and_truncation(tmp_path: Path) -> None:
+    from etoro_demo_bot.news.archive import summarize_archive
+
+    path = tmp_path / "news.sqlite"
+    store = NewsArchive(path)
+    store.ingest(feed(), source=SOURCE, observed_at=NOW)
+    store.ingest(
+        feed("Another event", identity="urn:synthetic:2"),
+        source=SOURCE,
+        observed_at=NOW + timedelta(seconds=1),
+    )
+    before = path.read_bytes()
+    old = summarize_archive(path, as_of=NOW)
+    assert old.status == "AVAILABLE" and old.total_events == 1
+    assert old.items[0].published_at is not None
+    assert old.items[0].published_at < old.items[0].observed_at
+    assert old.earnings_coverage == "UNKNOWN" and old.source_verification == "UNVERIFIED"
+    assert not old.execution_authorized
+    new = summarize_archive(path, as_of=NOW + timedelta(seconds=1), limit=1)
+    assert new.truncated and new.total_events == 2 and len(new.items) == 1
+    assert new.items[0].title == "Another event"
+    assert len(new.items[0].revision_sha256) == 64
+    assert "?" not in new.items[0].source_feed
+    assert path.read_bytes() == before
+    assert summarize_archive(path, as_of=NOW + timedelta(days=2)).status == "STALE"
+    assert summarize_archive(path, as_of=NOW - timedelta(seconds=1)).status == "EMPTY"
+
+
+@pytest.mark.parametrize("operation", ["facts", "ingest", "summary"])
+def test_lost_archive_never_recreated(tmp_path: Path, operation: str) -> None:
+    import sqlite3
+
+    from etoro_demo_bot.news.archive import summarize_archive
+
+    path = tmp_path / "lost.sqlite"
+    store = NewsArchive(path)
+    path.unlink()
+    with pytest.raises((NewsError, sqlite3.Error)):
+        if operation == "facts":
+            store.facts(as_of=NOW)
+        elif operation == "ingest":
+            store.ingest(feed(), source=SOURCE, observed_at=NOW)
+        else:
+            summarize_archive(path, as_of=NOW)
+    assert not path.exists()
+
+
+@pytest.mark.parametrize("tamper", ["raw", "derived", "revision", "checksum"])
+def test_summary_and_ingestion_reject_tampered_archive(tmp_path: Path, tamper: str) -> None:
+    import sqlite3
+    from contextlib import closing
+
+    from etoro_demo_bot.news.archive import summarize_archive
+
+    path = tmp_path / "tampered.sqlite"
+    store = NewsArchive(path)
+    store.ingest(feed(), source=SOURCE, observed_at=NOW)
+    with closing(sqlite3.connect(path)) as db, db:
+        if tamper == "raw":
+            db.execute("UPDATE feed_snapshots SET raw=?", (b"invalid",))
+        elif tamper == "derived":
+            db.execute("DELETE FROM filing_observations")
+        elif tamper == "revision":
+            db.execute("UPDATE filing_revisions SET payload='{}'")
+        else:
+            db.execute("UPDATE feed_snapshots SET sha256='incorrect'")
+    before = path.read_bytes()
+    with pytest.raises(NewsError, match="UNAVAILABLE_OR_INVALID") as error:
+        summarize_archive(path, as_of=NOW)
+    assert str(path) not in str(error.value) and error.value.__context__ is None
+    with pytest.raises(NewsError):
+        store.ingest(feed(), source=SOURCE, observed_at=NOW + timedelta(seconds=1))
+    assert path.read_bytes() == before
+
+
+def test_matching_table_names_wrong_columns_fail_without_writes(tmp_path: Path) -> None:
+    import sqlite3
+    from contextlib import closing
+
+    path = tmp_path / "wrong-schema.sqlite"
+    with closing(sqlite3.connect(path)) as db, db:
+        for table in ("feed_snapshots", "filing_observations", "filing_revisions"):
+            db.execute(f"CREATE TABLE {table}(unrelated TEXT)")
+    before = path.read_bytes()
+    with pytest.raises(NewsError, match="INVALID_ARCHIVE_COLUMNS"):
+        NewsArchive(path)
+    assert path.read_bytes() == before
+
+
+def test_ingestion_budget_failure_rolls_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import etoro_demo_bot.news.archive as archive_module
+
+    path = tmp_path / "budget.sqlite"
+    store = NewsArchive(path)
+    store.ingest(feed(), source=SOURCE, observed_at=NOW)
+    before = path.read_bytes()
+    monkeypatch.setattr(archive_module, "MAX_ARCHIVE_BYTES", len(feed()) + 1)
+    with pytest.raises(NewsError, match="BUDGET"):
+        store.ingest(feed(), source=SOURCE, observed_at=NOW + timedelta(seconds=1))
+    assert path.read_bytes() == before
+
+
+def test_unknown_publication_remains_unknown_in_dashboard_summary(tmp_path: Path) -> None:
+    from etoro_demo_bot.news.archive import summarize_archive
+
+    path = tmp_path / "unknown.sqlite"
+    store = NewsArchive(path)
+    raw = feed().replace(b"<published>2026-10-29T14:00:00Z</published>", b"")
+    store.ingest(raw, source=SOURCE, observed_at=NOW)
+    assert summarize_archive(path, as_of=NOW).items[0].published_at is None
