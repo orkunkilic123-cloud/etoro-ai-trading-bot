@@ -33,8 +33,8 @@ def main() -> int:
     except ConfigurationError:
         print("Demo configuration invalid or incomplete. No credential values shown.")
         return 1
-    except IncompleteDemoSnapshot:
-        print("Demo P&L diagnostic: incomplete-or-incompatible-data. No account data shown.")
+    except IncompleteDemoSnapshot as exc:
+        print(f"Demo P&L validation: {exc.field}: {exc.category}. No account data shown.")
         return 1
     except ApiError:
         if args.command == "show-demo-balance":
