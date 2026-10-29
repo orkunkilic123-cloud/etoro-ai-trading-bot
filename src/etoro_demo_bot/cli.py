@@ -1,4 +1,4 @@
-"""Explicit read-only Demo connection and verified cash checks."""
+"""Explicit read-only Demo connection check and fail-closed balance command."""
 
 import argparse
 
@@ -25,8 +25,13 @@ def main() -> int:
                     "key scope relies on eToro enforcement."
                 )
     except (ApiError, ConfigurationError, IncompleteDemoSnapshot):
-        # Never include upstream exceptions or response bodies in CLI output.
-        print("Demo balance/check unavailable: credentials, API read or verified schema incomplete.")
+        if args.command == "show-demo-balance":
+            print(
+                "Demo balance unavailable: the portfolio GET does not establish "
+                "the documented P&L cash/equity schema. No balance is inferred."
+            )
+        else:
+            print("Demo check unavailable: credentials or API read failed.")
         return 1
     print(output)
     return 0
