@@ -1,11 +1,11 @@
-"""Offline read-only Demo balance and redaction tests."""
+"""Offline regressions: portfolio GET must never masquerade as verified P&L."""
 
 import sys
 
 import httpx
 import pytest
 
-from etoro_demo_bot.client import DemoClient
+from etoro_demo_bot.client import ApiError, ApiResult, DemoClient
 from etoro_demo_bot.config import Credentials
 from etoro_demo_bot.demo_balance import display_demo_balance
 from etoro_demo_bot.demo_cash import IncompleteDemoSnapshot
@@ -16,10 +16,7 @@ def observation() -> dict[str, object]:
         "clientPortfolio": {
             "accountCurrencyId": 1,
             "credit": 1000,
-            "ordersForOpen": [
-                {"mirrorID": 0, "amount": 200},
-                {"mirrorID": 7, "amount": 70},
-            ],
+            "ordersForOpen": [{"mirrorID": 0, "amount": 200}],
             "orders": [{"amount": 150}],
             "positions": [{"positionID": 1}],
             "mirrors": [],
@@ -27,107 +24,93 @@ def observation() -> dict[str, object]:
     }
 
 
-def test_verified_cash_components() -> None:
-    output = display_demo_balance(observation())
-    assert "Portfolio credit (before pending allocations): USD 1000.00" in output
-    assert "Available cash (calculated): USD 650.00" in output
-    assert "Reserved cash (documented pending orders): USD 350.00" in output
-    assert "Direct open positions: 1" in output
-    assert "Total account balance: Not available" in output
-    assert "Equity: Not available" in output
-
-
 @pytest.mark.parametrize(
-    "change",
+    "payload",
     [
+        {},
         {"clientPortfolio": None},
-        {"clientPortfolio": {"credit": 1000}},
-        {"clientPortfolio": {"accountCurrencyId": 2, "credit": 1000}},
-        {"clientPortfolio": {"accountCurrencyId": True, "credit": 1000}},
-        {"clientPortfolio": {"accountCurrencyId": 1, "credit": "NaN"}},
-        {"clientPortfolio": {"accountCurrencyId": 1, "credit": -1}},
-        {"clientPortfolio": {"accountCurrencyId": 1, "credit": 1000, "orders": []}},
+        {"clientPortfolio": {}},
+        observation(),
+        {"clientPortfolio": {"credit": "UNTRUSTED_PRIVATE_VALUE"}},
     ],
 )
-def test_incomplete_schema_fails_closed(change: dict[str, object]) -> None:
-    with pytest.raises(IncompleteDemoSnapshot):
-        display_demo_balance(change)
-
-
-def test_malformed_positions_fail_closed() -> None:
-    payload = observation()
-    portfolio = payload["clientPortfolio"]
-    assert isinstance(portfolio, dict)
-    portfolio["positions"] = [None]
+def test_portfolio_cannot_claim_balances(payload: dict[str, object]) -> None:
     with pytest.raises(IncompleteDemoSnapshot):
         display_demo_balance(payload)
 
 
-def test_copy_positions_not_claimed_complete() -> None:
-    payload = observation()
-    portfolio = payload["clientPortfolio"]
-    assert isinstance(portfolio, dict)
-    portfolio["mirrors"] = [{"positions": [{}]}]
-    assert "copy-trading coverage unverified" in display_demo_balance(payload)
-
-
 @pytest.mark.parametrize("status", [401, 403, 500])
-def test_cli_auth_failures_redacted(
+def test_cli_failures_do_not_print_synthetic_secret(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     status: int,
 ) -> None:
     from etoro_demo_bot.cli import main
 
-    secret = "UNPRINTABLE_SYNTHETIC_SECRET"
+    secret = "SYNTHETIC_PRIVATE_VALUE"
     monkeypatch.setattr(sys, "argv", ["etoro-demo", "show-demo-balance"])
     monkeypatch.setattr(
         Credentials,
         "from_environment",
         classmethod(lambda cls: cls(secret, secret, "demo", True)),
     )
-    original = DemoClient.portfolio
 
-    def rejected(self: DemoClient) -> object:
-        raise __import__("etoro_demo_bot.client", fromlist=["ApiError"]).ApiError(
-            f"API read rejected (HTTP {status}); " + secret
-        )
+    def rejected(self: DemoClient) -> ApiResult:
+        raise ApiError(f"HTTP {status}: {secret}")
 
     monkeypatch.setattr(DemoClient, "portfolio", rejected)
     assert main() == 1
     output = capsys.readouterr().out
     assert secret not in output
-    monkeypatch.setattr(DemoClient, "portfolio", original)
+    assert "unavailable" in output
 
 
-def test_cli_malformed_payload_redacted(
+def test_malformed_response_redacted(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     from etoro_demo_bot.cli import main
-    from etoro_demo_bot.client import ApiResult
 
     monkeypatch.setattr(sys, "argv", ["etoro-demo", "show-demo-balance"])
     monkeypatch.setattr(
-        Credentials, "from_environment",
+        Credentials,
+        "from_environment",
         classmethod(lambda cls: cls("fixture-api", "fixture-user", "demo", True)),
     )
     monkeypatch.setattr(
         DemoClient, "portfolio",
-        lambda self: ApiResult(data={"clientPortfolio": {"secret": "SENSITIVE_FIXTURE"}}),
+        lambda self: ApiResult(data={"clientPortfolio": {"credit": "PRIVATE_RESPONSE"}}),
     )
     assert main() == 1
-    output = capsys.readouterr().out
-    assert "SENSITIVE_FIXTURE" not in output
+    assert "PRIVATE_RESPONSE" not in capsys.readouterr().out
 
 
-def test_client_remains_get_only() -> None:
+def test_get_only_and_original_check_demo(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from etoro_demo_bot.cli import main
+
     credentials = Credentials("fixture-api", "fixture-user", "demo", True)
+    requests: list[str] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.method == "GET"
-        assert request.url.path == "/api/v1/trading/info/demo/portfolio"
+        requests.append(request.method + " " + request.url.path)
         return httpx.Response(200, json=observation())
 
     with DemoClient(credentials, transport=httpx.MockTransport(handler)) as client:
-        assert "Available cash" in display_demo_balance(client.portfolio().data)
+        with pytest.raises(IncompleteDemoSnapshot):
+            display_demo_balance(client.portfolio().data)
+    assert requests == ["GET /api/v1/trading/info/demo/portfolio"]
+    monkeypatch.setattr(sys, "argv", ["etoro-demo", "check-demo"])
+    monkeypatch.setattr(
+        Credentials,
+        "from_environment",
+        classmethod(lambda cls: cls("fixture-api", "fixture-user", "demo", True)),
+    )
+    monkeypatch.setattr(DemoClient, "portfolio", lambda self: ApiResult(data=observation()))
+    assert main() == 0
+    assert (
+        capsys.readouterr().out.strip()
+        == "Demo portfolio GET succeeded. No orders submitted; key scope relies on eToro enforcement."
+    )
