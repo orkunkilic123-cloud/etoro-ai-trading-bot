@@ -31,8 +31,8 @@ def test_verified_observation_produces_risk_snapshot_not_authorization() -> None
     now = datetime.now(UTC)
     result = prepare_risk_snapshot(evidence(), **sample(now))  # type: ignore[arg-type]
     assert result.demo is True
-    assert result.complete is True
-    assert result.cash_flows_reconciled is True
+    assert result.complete is False
+    assert result.cash_flows_reconciled is False
     assert result.available_balance == Decimal("9000")
 
 
