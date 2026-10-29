@@ -363,3 +363,19 @@ From a trusted PowerShell checkout, run the **offline** tests without API creden
 ```
 
 The separate `etoro-demo check-demo` command is an **authenticated** read-only Demo portfolio GET, never an offline test and never automatic. It requires your explicit opt-in from a trusted local shell and verified **Demo Read** credentials stored privately; never put secrets in GitHub, CI, screenshots, prompts or logs. Before attempting it, follow [Phase 17's minimum owner steps and blockers](PHASE17_DEMO_READINESS.md). This workflow does not authorize or submit orders.
+
+## Phase 21 — offline regression only
+
+From a trusted Windows PowerShell checkout, run:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_phase21_risk_bridge.py
+.\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m ruff check .
+.\.venv\Scripts\python.exe -m ruff format --check .
+.\.venv\Scripts\python.exe -m mypy
+.\.venv\Scripts\python.exe -m pip check
+.\.venv\Scripts\python.exe -m hatchling build
+```
+
+These are offline checks and require **no broker API credentials**. The broker-evidence bridge never marks a snapshot as complete or reconciled merely from an asserted flag. Read [Phase 21 status](PHASE21_INTEGRATION.md) before a separate, owner-operated read-only account verification. There is no first-order command.

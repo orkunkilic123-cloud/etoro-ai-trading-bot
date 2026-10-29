@@ -114,3 +114,7 @@ independently verified original availability, quotes, FX, costs, actions and eli
 ### Phase 17: Demo read-only preparation (partial)
 
 [Offline readiness gates and owner-operated first-read checklist](docs/PHASE17_DEMO_READINESS.md) provide explicit evidence blockers and a separate future virtual-trade checklist. No authenticated tests or orders were run during implementation. The readiness assessment never grants execution authority; a documented v2/v3 order-endpoint discrepancy remains unresolved. The existing execution coordinator stays disabled by default.
+
+### Phase 21 — untrusted broker observation bridge
+
+[Phase 21 integration status and v2/v3 blockers](docs/PHASE21_INTEGRATION.md). The existing broker-evidence module can validate independently reviewed observations and construct a **risk-incomplete** AccountSnapshot. It does not fetch broker data, attest Demo identity, authorize a trade or enable execution. A complete authenticated broker normalization and current v3 order contract remain blocked; trading stays disabled.
