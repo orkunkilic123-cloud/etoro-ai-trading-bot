@@ -14,11 +14,14 @@ def display_demo_balance(data: Mapping[str, Any]) -> str:
     # Official guide documents these fields on the P&L response itself.
     cash = normalize_demo_cash(data)
     reserved = cash.reserved_open + cash.reserved_orders
+
     # Values in the P&L cash formula are USD only. This does not establish
     # the user's separate base/account currency.
     def money(value: Decimal) -> str:
         result = format(value, "f")
-        return result + ("." + "00" if "." not in result else "0" if len(result.split(".")[1]) == 1 else "")
+        return result + (
+            "." + "00" if "." not in result else "0" if len(result.split(".")[1]) == 1 else ""
+        )
 
     return (
         "Cash denomination: USD (official P&L cash formula; account currency unverified)\n"

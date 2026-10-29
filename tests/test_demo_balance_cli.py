@@ -31,9 +31,7 @@ def test_json_number_and_subcent_precision_preserved() -> None:
 
 
 def test_empty_pending_order_arrays() -> None:
-    result = display_demo_balance(
-        {"credit": 1000, "ordersForOpen": [], "orders": []}
-    )
+    result = display_demo_balance({"credit": 1000, "ordersForOpen": [], "orders": []})
     assert "Available cash (calculated): USD 1000.00" in result
 
 
