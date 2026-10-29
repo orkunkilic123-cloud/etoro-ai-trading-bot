@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
+from .demo_cash import DemoCashObservation, normalize_demo_cash
 from .risk.models import AccountSnapshot, Exposure
 
 
@@ -101,4 +102,31 @@ def prepare_risk_snapshot(
         demo=True,
         complete=False,
         cash_flows_reconciled=False,
+    )
+
+
+def prepare_pnl_risk_observation(
+    evidence: BrokerEvidence,
+    *,
+    pnl_response: dict[str, object],
+    account_id: str,
+    equity: Decimal,
+    exposures: tuple[Exposure, ...],
+    observed_at: datetime,
+) -> AccountSnapshot:
+    """Connect documented Demo P&L cash parsing to the existing risk bridge.
+
+    This does not authenticate a payload or certify its account or position
+    identity. Therefore the risk snapshot stays incomplete and non-admissible.
+    """
+    cash: DemoCashObservation = normalize_demo_cash(pnl_response)
+    if cash.trusted_for_risk:
+        raise ValueError("Unexpected trusted broker cash")
+    return prepare_risk_snapshot(
+        evidence,
+        account_id=account_id,
+        equity=equity,
+        available_balance=cash.available_cash,
+        exposures=exposures,
+        observed_at=observed_at,
     )
