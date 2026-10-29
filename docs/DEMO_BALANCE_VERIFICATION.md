@@ -55,3 +55,23 @@ Official sources:
 
 - https://api-portal.etoro.com/guides/calculate-available-cash
 - https://api-portal.etoro.com/guides/calculate-equity
+
+
+## Privacy-safe diagnostic (PR #30)
+
+Run `etoro-demo show-demo-balance` in the owner's Codespaces session. Only a
+fixed error category is printed; never paste keys, raw JSON or request headers.
+
+- `authorization`: HTTP 401/403; key invalid, missing entitlement or access denied (not enough evidence to distinguish them).
+- `unsupported-endpoint`: HTTP 404, endpoint missing or inaccessible.
+- `rate-limit`: HTTP 429 after bounded read-only retries.
+- `server`: HTTP 5xx after bounded retries where applicable.
+- `network`: transport/connection failure.
+- `timeout`: read or connection timeout.
+- `invalid-response`: HTTP 200 with invalid or non-object JSON.
+- `incomplete-or-incompatible-data`: HTTP 200 object lacks fields needed for documented cash computation.
+- `unexpected-http`: another unexpected HTTP response.
+- `local configuration`: may be grouped with incompatible-data for credential declaration failures; no credential values are exposed.
+
+No diagnostics access Real endpoints or submit orders. No full local validation
+claim should be made until the complete repository is tested in a suitable runtime.
