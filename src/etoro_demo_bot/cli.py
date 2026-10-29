@@ -17,7 +17,7 @@ def main() -> int:
             result = client.pnl() if args.command == "show-demo-balance" else client.portfolio()
             if args.command == "show-demo-balance":
                 if result.partial:
-                    raise IncompleteDemoSnapshot("Partial Demo portfolio response")
+                    raise IncompleteDemoSnapshot("Partial Demo P&L response")
                 output = display_demo_balance(result.data)
             else:
                 output = (
@@ -30,11 +30,16 @@ def main() -> int:
         else:
             print("Demo check unavailable.")
         return 1
-    except (ApiError, ConfigurationError, IncompleteDemoSnapshot):
+    except ConfigurationError:
+        print("Demo configuration invalid or incomplete. No credential values shown.")
+        return 1
+    except IncompleteDemoSnapshot:
+        print("Demo P&L diagnostic: incomplete-or-incompatible-data. No account data shown.")
+        return 1
+    except ApiError:
         if args.command == "show-demo-balance":
             print(
-                "Demo P&L diagnostic: incomplete-or-incompatible-data or configuration. "
-                "No account data shown."
+                "Demo P&L diagnostic: read-error. No account data shown."
             )
         else:
             print("Demo check unavailable: credentials or API read failed.")
