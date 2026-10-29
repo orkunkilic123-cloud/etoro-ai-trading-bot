@@ -69,7 +69,9 @@ def normalize_demo_cash(data: Mapping[str, Any]) -> DemoCashObservation:
         if "mirrorID" in item and "mirrorId" in item:
             raise IncompleteDemoSnapshot("mirrorID", "incompatible structure")
         mirror_key = "mirrorID" if "mirrorID" in item else "mirrorId"
-        mirror_id = _required(item, mirror_key)
+        if mirror_key not in item:
+            raise IncompleteDemoSnapshot("mirrorID", "missing")
+        mirror_id = item[mirror_key]
         if type(mirror_id) is not int:
             raise IncompleteDemoSnapshot("mirrorID", "invalid type")
         amount = _amount(_required(item, "amount"), "amount")
