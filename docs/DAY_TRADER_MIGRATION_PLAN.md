@@ -1,9 +1,46 @@
 # Active intraday migration plan
 
-Date: 2026-10-28. **Plan for review; no production change or execution authorization.**
+Date: 2026-10-29. **Active offline implementation plan; no execution authorization.**
 External Trader Skill reference: **Jakeschincariol/day-trader-skill only**.
 All existing bot modules are retained. Nothing is restarted, deleted, merged, connected to
-a broker or enabled by this plan. Implementation requires a subsequent approved scope.
+a broker or enabled by this plan. The current owner-approved offline scope is recorded below.
+
+## Current execution checkpoints (supersedes historical approval/status notes below)
+
+The owner has authorized implementation, offline tests, commits and dependent PRs for the
+Windows application. No broker credential use, authenticated requests, actual orders, merging,
+deployment, paid services or trading activation is authorized. No leveraged research is included.
+The older phase proposals below are retained as design provenance, not a current completion claim.
+
+Verified baseline: main `f8f3d6d`; PR #25 remains open at `aa65a21d124e34ab6d75085cc57fa98c8906a267`.
+Only PR #25 was open at inspection. Its offline P&L scope is preserved. New work starts on
+`feature/demo-broker-diagnostics` directly from that commit; PRs are stacked, never cherry-picked
+or treated as merged. Baseline local validation was 902 passing tests; current validation is
+recorded at each checkpoint below. Windows and hosted CI are separate evidence gaps.
+
+| Milestone / observable behavior | Existing modules extended or reused | Dependency / acceptance | Status and evidence |
+| --- | --- | --- | --- |
+| A: Saved P&L and aggregate totals plus local safety journal produces sanitized cash/position/reservation diagnostic and actual RiskEngine rejection where evidence is incomplete | demo_cash, broker_evidence_gate, risk, execution journals | PR25; mocked response→normalization→reconciliation→risk tests; no writes to owner state | Implemented/tested: 36 diagnostic tests, 960 full-suite tests; full broker admission externally blocked |
+| B: Contradictory broker execution outcomes stay unknown through restart, with exact ticket authorization retained | execution/reconcile, client, engine, tests | Same core PR as A; operation-level public v3 audit, partial/terminal/restart regressions | Implemented/tested: 22 new lifecycle tests, same 960-test run; authenticated compatibility externally blocked |
+| C: One Windows command produces SHADOW results, daily/weekly diagnostics and local dashboard from hourly or 5Min ORB replay; durable scheduled slot claims suppress duplicate runs | backtest, intraday, scanner/strategy/risk and report journals | Dependent application PR; EUR500/1000 CLI demonstrations, schedule/restart/report tests | Pending application checkpoint; real-time provider wiring deferred |
+| D: Offline SEC feed ingestion preserves publication/observation/revisions and exposes incomplete earnings coverage | existing earnings/strategy interfaces, new bounded source adapter | Separate dependent PR; XML safety, as-of/dedup/coverage tests | Pending news checkpoint; network source acquisition and qualified future calendar externally blocked |
+
+Core checkpoint (Linux / Python 3.12, 29 October 2026): `python -m pytest -q` **960 passed**;
+`python -m ruff check .`, `python -m ruff format --check .`, strict `python -m mypy`
+(118 files), `python -m pip check`, editable installation without build isolation, Hatchling
+wheel/sdist builds and wheel build from the sdist passed. Synthetic intraday CLI runs for
+EUR500/1000 passed. The existing `backtest.intraday.benchmark` passed (21 sessions,
+78 bars/session, 10,000 draws; replay p50 0.097s/p95 0.107s, model simulation 0.091s). See [broker diagnostics](BROKER_DIAGNOSTICS.md) and
+[execution contract review](EXECUTION_CONTRACT_REVIEW.md) for supported behavior and blockers.
+No credentials, authenticated broker calls or orders were used. Windows was not run; hosted CI
+is unavailable under the owner's reported Actions allowance and is not replaced by local results.
+
+External blockers remain visible in each module's documentation. No `complete=True` broker
+snapshot will be manufactured from local assertions. Report-only shadow state is never imported
+as real broker evidence. Future bounded autonomous Demo execution would require an explicitly
+approved policy change defining eligible accounts/instruments, spend and risk bounds, monitoring,
+revocation and recovery, plus separate security review of authorization. This task does not make
+that change or expose an approval bypass. A powered-off PC does not execute scheduled tasks.
 
 ## 1. Direction and recommended decision
 
