@@ -1,47 +1,82 @@
-# Phase 22 — P&L to Risk integration (partial, execution disabled)
+# Phase 22 — offline Demo P&L and reservation normalization
 
-## Official order contract audit, 29 October 2026
+## Scope and acceptance criteria for PR #25
 
-Official eToro Builders [Trading](https://builders.etoro.com/products/trading), [FAQ](https://builders.etoro.com/faq), [first bot](https://builders.etoro.com/blog/building-your-first-trading-bot), and [migration](https://builders.etoro.com/blog/from-demo-to-production-trading-bot) pages explicitly show **POST /api/v2/trading/execution/demo/orders** with `x-api-key`, `x-user-key`, unique `x-request-id`, and example fields `action=open`, `transaction=buy`, `instrumentId`, `orderType=mkt`, `amount` or `units`, `orderCurrency=usd`, `leverage=1`. The repository's earlier operation-level OpenAPI audit (`docs/API_FINDINGS.md`) separately documents **POST /api/v3/trading/execution/demo/orders** and the current `execution/client.py` still implements v3. The latest machine-readable OpenAPI document could **not be retrieved for independent field-by-field inspection in this review**. Therefore current v3 order request shape, accepted response schema, statuses and lookup compatibility cannot be certified and a v2 write adapter cannot safely be substituted merely from tutorial examples. **Both variants remain prohibited for the first submission.**
+This PR delivers offline normalization only. It does not deliver a complete broker integration,
+first-trade readiness, trusted account attestation or an execution command.
 
-## Actual integration added
+Acceptance requires:
+- Correct available-cash arithmetic: credit minus manual opening allocations minus pending orders.
+- Support for the documented clientPortfolio envelope and mirrorId spelling, retaining the older
+  explicitly normalized cash input interface.
+- Exact bounded Decimal inputs and isolated monetary arithmetic; rejection of missing, invalid,
+  nonfinite, negative, over-reserved or malformed observations and duplicate instrument exposures.
+- AccountSnapshot output always complete=False and cash_flows_reconciled=False; actual RiskEngine
+  rejection even with all external evidence assertions true.
+- No changes to execution, authorization, reconciliation, risk limits, kill switch, network routes,
+  credentials, dependencies or CI workflows.
+- Passing available local automated checks, with Windows and hosted-CI gaps disclosed separately.
 
-`broker_evidence_gate.prepare_pnl_risk_observation()` now composes the existing `normalize_demo_cash()` parser with the Phase 21 risk bridge. The cash parser requires all documented P&L credit, manual orders-for-open and pending orders amounts and conservatively subtracts reservations. Invalid, missing, over-reserved and nonfinite values fail closed. The resulting `AccountSnapshot` is deliberately `complete=False` and `cash_flows_reconciled=False`, even when every external evidence flag is true. It therefore **cannot pass the existing Risk Manager's safety admission** until a separately verified authoritative Demo identity and full portfolio/position adapter exists. It never makes network calls, loads credentials, creates authorization or dispatches orders. This reuses existing modules rather than introducing another checklist.
+The incomplete broker-dependent work below is outside this PR's merge acceptance criteria.
+Merging this offline improvement cannot grant permission to trade. Repository branch protection
+and required checks remain binding; this scope change does not bypass those controls.
 
-This integration accepts only inputs explicitly identified as the official P&L response **not** the separate `GET /demo/portfolio` response. It cannot prove account identity, position ownership, fresh valuation, pending execution state or quote provenance. Those are still blocked.
+## Implemented behavior and boundaries
 
-## Precise blockers before first Demo virtual order
+broker_evidence_gate.prepare_pnl_risk_observation composes the cash parser and existing Phase 21
+risk observation bridge. normalize_demo_pnl_response handles PortfolioResponseWithPnl's
+clientPortfolio envelope and camel-case mirrorId. normalize_demo_cash retains the explicit
+normalized input spelling mirrorID. JSON callers must decode numbers as Decimal, not binary
+floats. The P&L shape must not be assumed to match a separate portfolio GET response.
 
-1. Obtain authoritative up-to-date operation-level OpenAPI for the **v2 and v3** Demo order endpoints, including exact payload validation, request idempotency, accepted/failed response schema and status/reconciliation lookup. Verify user-key Demo Write scope independently. Do not send a test order until the owner authorizes an exact virtual order.
-2. Complete and review trusted authenticated **read-only owner-operated** schema verification for Demo account identity, P&L/portfolio available cash, complete positions, pending orders, market/session/quote freshness, USD valuation and order minimum/stop requirements. Do not share keys, account IDs or raw portfolio responses.
-3. Implement source-verified authoritative normalization and connection to the existing Risk Manager, preserving original daily UTC baseline, the 1% risk ceiling, 3% daily loss halt, kill switch, cash/exposure reservations, unleveraged long-only instrument restriction and restart recovery. Never silently mark unverified observations complete.
-4. Only then review an isolated owner-only one-order approval and preview interface with exact payload digest and short expiry; recheck risk immediately before one dispatch and reconcile outcomes without automatic retry of uncertain submissions.
+Cash normalization subtracts manual ordersForOpen (mirror identifier zero) and all supplied orders.
+It does not prove that supplied enumerations are complete or that orders are unique, current,
+resolved or owned by the account. Repeated allocations can conservatively understate cash;
+missing allocations cannot be detected from these fields alone. Identity, positions, account
+currency, equity and timestamps are not authenticated by parsing. Equity/exposures are explicit
+caller inputs, not values inferred from undocumented broker fields.
 
-**No first-order execution command is provided.** Existing disabled execution code, tests, research and recovery mechanisms remain untouched. This is a partial Phase 22 draft and must not be merged until integration and final-head Ubuntu/Windows CI are reviewed.
+Snapshots stay incomplete and unreconciled regardless of evidence flags. Existing RiskEngine
+rejects them before creating a reservation. The parser does not release local reservations,
+reconcile uncertain submissions, reset safety state or authorize execution. Planned risk remains
+capped at 1%, daily loss halt at 3%, with persistent kill switch and Demo-only restrictions.
 
-## Follow-up local contract review
+## Public schema provenance
 
-Retrieved the public operation-level specification without authentication on 29 October 2026:
+Retrieved without authentication on 29 October 2026:
 https://api-portal.etoro.com/api-reference/openapi.json
 SHA-256: 549e77e8f37dc167dfb6295e4771faf1f9bb71f62d0e925109cd6aa9a5d299a0
 
-v2: responses ['200', '400', '401', '404', '500', '429']; request {'$ref': '#/components/schemas/TradingDemoAdminApi_UnifiedOrderRequest'}
-v3: responses ['202', '400', '401', '403', '404', '500', '429']; request {'$ref': '#/components/schemas/TradingDemoAdminApi_UnifiedOrderRequest'}
+The P&L 200 response references PortfolioResponseWithPnl. Both v2 and v3 Demo order creation
+operations coexist and reference TradingDemoAdminApi_UnifiedOrderRequest. v2 acceptance is 200;
+v3 acceptance is 202 and has stricter settlementType rules. Both describe asynchronous lookup
+via GET /api/v2/trading/info/demo/orders:lookup with orderId or referenceId. Acceptance is not a
+fill. These findings supersede the initial review's inability to retrieve the specification.
+No execution adapter or route was changed from these documentation findings.
 
-Both versions currently coexist. v3 requires stricter settlementType validation and returns 202; v2 returns 200. Both require asynchronous reconciliation via GET /api/v2/trading/info/demo/orders:lookup, using orderId or referenceId. Acceptance is not a fill. No route was switched or enabled. Broker idempotency retention, account entitlements and actual compatibility remain unverified.
+## Deferred broker integration — not first-trade ready
 
-The P&L 200 schema is PortfolioResponseWithPnl with clientPortfolio envelope and camel-case mirrorId. Added an offline cash adapter for that verified shape and connected it to the existing incomplete risk snapshot. Decode JSON numbers as Decimal; binary floats are deliberately rejected. Position valuation/identity, mirrored portfolios, complete reservations and cash-flow reconciliation remain unverified; no snapshot is promoted to authoritative. The older explicit normalized-input helper remains supported. Monetary precision is isolated and extreme exponents/duplicate exposures now fail closed.
+A separate reviewed effort must establish authoritative Demo identity and key scope; complete
+position valuation, available cash, broker/local reservations and cash-flow reconciliation;
+fresh quotes/session/eligibility/minimums and costs; current v3 payload/response/status mapping,
+idempotency retention and uncertain-outcome recovery; and an exact-ticket owner approval flow.
+Public documentation and synthetic mocks do not establish authenticated compatibility.
+Unknown or duplicate prior submissions remain blocked. Never retry an uncertain POST blindly,
+clear safety state to obtain a pass, or treat this offline PR as order authorization.
 
-GitHub-hosted CI remains pending/unavailable because of the owner-reported Actions billing allowance; no workflow or billing workaround was introduced. Local checks are recorded separately.
+## Local review and validation gaps
 
-### Local verification record
+Full local Linux/Python 3.12 suite: **902 tests passed**; Ruff lint and formatting, strict mypy
+(115 files), pip check, editable installation and wheel/sdist builds passed. The earlier synthetic
+intraday benchmark/bootstrap demos completed for EUR 500 and EUR 1,000; these are engineering
+fixtures, not market-performance evidence. Regression tests include negative mirror identifiers,
+Decimal precision, duplicate exposures and rejection by the actual RiskEngine.
 
-29 October 2026, Codex Linux/Python 3.12: complete pytest **900 passed**; Ruff lint and formatting passed; strict mypy passed (115 files); pip check passed; editable installation and hatchling wheel/sdist builds passed. Existing offline intraday CLI benchmark/bootstrap demos completed for both EUR 500 and EUR 1,000 into separate new /tmp directories. These are synthetic engineering outputs, not historical performance evidence. Windows was not run locally. GitHub-hosted CI is pending because of the owner-reported exhausted allowance; no additional run was requested and no workflow changed.
+Windows has not been run locally. Hosted checks are unavailable because of the owner's reported
+exhausted GitHub Actions allowance; earlier checks were failed/cancelled. No CI rerun, workflow
+change or billing workaround is part of this review. These are validation gaps, not passing checks.
 
-The code is ready for review as a partial, disabled integration improvement, not deployment or first-trade clearance. The shortest safe path remains owner-operated read-only schema/identity and position/cash reconciliation; a separately reviewed current v3 payload/status adapter and uncertain-outcome recovery; then exact one-ticket owner authorization with fresh risk checks. Do not clear or recreate safety state to obtain a pass.
-
-### Final technical review
-
-Local final-review suite: **902 passed**, Ruff lint/format and strict mypy (115 files) passed; pip check, editable installation and wheel/sdist builds passed. Fixed malformed negative mirror identifiers that previously silently excluded an opening reservation; both normalized and official-envelope paths now reject them. Added regression tests. Incomplete snapshots still fail RiskEngine admission before any reservation or execution. No risk, authorization, reconciliation, endpoint or CI settings changed.
-
-Recommendation: **DO NOT MERGE under the current documented Phase 22 acceptance criteria**. Linux checks pass, but Windows final-head validation is absent and hosted checks are failed/cancelled with the owner-reported exhausted Actions allowance. Authoritative identity/positions/cash-flow reconciliation and execution wire compatibility remain incomplete. This is reviewable offline groundwork, not a completed broker integration. No credentials or authenticated broker requests were used.
+Technical recommendation for the narrowed scope: **MERGE**, subject to normal owner review and
+repository required-check policy. No remaining confirmed defect was found in the offline scope.
+This supersedes the previous DO NOT MERGE recommendation, which evaluated full broker integration
+and final-head cross-platform CI as Phase 22 completion requirements. Trading remains disabled.
