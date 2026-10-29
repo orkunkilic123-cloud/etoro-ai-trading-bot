@@ -27,14 +27,23 @@ def reconcile_response(
     total = Decimal(0)
     seen: set[int] = set()
     if close:
-        if data.get("CID") != identity.customer_id or data.get("instrumentID") != instrument:
+        if (
+            type(data.get("CID")) is not int
+            or data.get("CID") != identity.customer_id
+            or type(data.get("instrumentID")) is not int
+            or data.get("instrumentID") != instrument
+        ):
             raise ExecutionError("ORDER_IDENTITY_MISMATCH")
         status = data.get("statusID")
         positions = data.get("positions")
         if not isinstance(positions, list):
             raise ExecutionError("EXECUTIONS_MISSING")
         for item in positions:
-            if not isinstance(item, dict) or item.get("positionID") != ticket["position_id"]:
+            if (
+                not isinstance(item, dict)
+                or type(item.get("positionID")) is not int
+                or item.get("positionID") != ticket["position_id"]
+            ):
                 raise ExecutionError("POSITION_MISMATCH")
             position_id = item["positionID"]
             if position_id in seen:
@@ -47,12 +56,14 @@ def reconcile_response(
     else:
         asset = data.get("asset", {})
         if (
-            data.get("accountId") != identity.broker_account_id
+            type(data.get("accountId")) is not int
+            or data.get("accountId") != identity.broker_account_id
             or data.get("action") != "open"
             or data.get("transaction") != "buy"
             or data.get("type") != "mkt"
-            or data.get("orderCurrency", "").lower() != "usd"
+            or data.get("orderCurrency") not in ("usd", "USD")
             or not isinstance(asset, dict)
+            or type(asset.get("instrumentId")) is not int
             or asset.get("instrumentId") != instrument
             or asset.get("settlementType") != "real"
             or type(asset.get("leverage")) is not int
@@ -62,17 +73,26 @@ def reconcile_response(
             or number(data.get("requestedUnits")) != units
         ):
             raise ExecutionError("ORDER_IDENTITY_MISMATCH")
-        status = data.get("status", {}).get("id")
+        status_data = data.get("status")
+        if not isinstance(status_data, dict):
+            raise ExecutionError("UNKNOWN_BROKER_STATUS")
+        status = status_data.get("id")
         positions = data.get("positionExecutions")
         if not isinstance(positions, list):
             raise ExecutionError("EXECUTIONS_MISSING")
         for item in positions:
+            if not isinstance(item, dict):
+                raise ExecutionError("POSITION_MISMATCH")
             position_id = item.get("positionId")
             if type(position_id) is not int or position_id <= 0 or position_id in seen:
                 raise ExecutionError("POSITION_MISMATCH")
             seen.add(position_id)
             opening = item.get("openingData", {})
-            if opening.get("orderId") != order_id:
+            if (
+                not isinstance(opening, dict)
+                or type(opening.get("orderId")) is not int
+                or opening.get("orderId") != order_id
+            ):
                 raise ExecutionError("EXECUTION_ORDER_MISMATCH")
             total += number(opening.get("units"))
             if number(item.get("stopLossRate")) != Decimal(p["stop_loss"]):
@@ -83,10 +103,12 @@ def reconcile_response(
         raise ExecutionError("EXECUTION_QUANTITY_MISMATCH")
     if status in {3, 5, 9, 10} and total <= 0:
         raise ExecutionError("EXECUTION_EVIDENCE_MISSING")
-    if status in {4, 7, 8} and total != 0:
+    if status in {1, 2, 4, 7, 8, 11, 12} and total != 0:
         raise ExecutionError("CONTRADICTORY_EXECUTION")
     if status in {5, 9, 10} and total >= units:
         raise ExecutionError("CONTRADICTORY_PARTIAL_FILL")
+    if status == 3 and total != units:
+        raise ExecutionError("INCOMPLETE_FILLED_ORDER")
     terminal = status in {3, 4, 7, 8, 9, 10}
     if status == 3:
         state = OrderState.FILLED
@@ -98,6 +120,8 @@ def reconcile_response(
         state = OrderState.CANCELLED
     else:
         state = OrderState.PENDING
-    if record.terminal and (state != record.state or total != record.executed_units):
+    if record.terminal and (
+        not terminal or state != record.state or total != record.executed_units
+    ):
         raise ExecutionError("TERMINAL_STATE_CONFLICT")
     return state, terminal, status, total, order_id

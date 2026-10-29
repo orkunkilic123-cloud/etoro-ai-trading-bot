@@ -395,3 +395,20 @@ Run without any broker credentials:
 ```
 
 This is an offline test of P&L cash reservations, not a request for read or write credentials. The resulting risk snapshot remains incomplete by design. See [Phase 22 broker blockers](PHASE22_INTEGRATION.md). No first-order command is enabled.
+
+## Offline broker diagnostics and execution regressions
+
+No credentials or network access are required:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q tests/test_broker_diagnostics.py tests/test_execution_contract_regressions.py
+.\.venv\Scripts\python.exe -m etoro_demo_bot.broker_diagnostics --help
+```
+
+For the owner-operated saved-response command, follow [BROKER_DIAGNOSTICS.md](BROKER_DIAGNOSTICS.md).
+It opens existing safety state read-only, prints only a sanitized summary and keeps trading
+blocked. A fresh P&L file alone cannot establish complete account evidence; matching aggregate
+totals and separately verified identity/permissions remain necessary. Never reset safety state or
+re-date a file to pass checks. [EXECUTION_CONTRACT_REVIEW.md](EXECUTION_CONTRACT_REVIEW.md)
+records the supported public contract and remaining order blockers. Windows execution of these
+new tests is unverified until actually run on Windows.

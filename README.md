@@ -122,3 +122,12 @@ independently verified original availability, quotes, FX, costs, actions and eli
 ### Phase 22 — offline Demo P&L and reservation normalization
 
 [Phase 22 integration contract and blockers](docs/PHASE22_INTEGRATION.md). The documented Demo P&L cash parser now feeds the existing Phase 21 risk observation bridge without authenticating account identity or treating partial account data as complete. Submission remains disabled; v2/v3 execution compatibility and trusted portfolio/position normalization remain unverified.
+
+### Offline broker diagnostics and lifecycle hardening (dependent on PR #25)
+
+[Saved-response diagnostics](docs/BROKER_DIAGNOSTICS.md) cross-check documented Demo P&L,
+aggregate equity/positions and existing local reservations, then exercise the actual Risk Manager.
+They produce sanitized summaries and keep incomplete snapshots blocked. The
+[execution review](docs/EXECUTION_CONTRACT_REVIEW.md) documents stricter fill consistency and
+restart recovery. This is offline software validation; broker compatibility and first-order
+readiness remain unverified. Follow the [active migration checkpoints](docs/DAY_TRADER_MIGRATION_PLAN.md).
