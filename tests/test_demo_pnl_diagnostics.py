@@ -42,9 +42,7 @@ def test_http_categories(status: int, category: str) -> None:
     ("exception", "category"),
     [(httpx.ReadTimeout, "timeout"), (httpx.ConnectError, "network")],
 )
-def test_transport_categories(
-    exception: type[httpx.TransportError], category: str
-) -> None:
+def test_transport_categories(exception: type[httpx.TransportError], category: str) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         raise exception("PRIVATE_SYNTHETIC_RESPONSE", request=request)
 
