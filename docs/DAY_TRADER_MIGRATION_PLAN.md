@@ -20,12 +20,13 @@ recorded at each checkpoint below. Windows and hosted CI are separate evidence g
 
 | Milestone / observable behavior | Existing modules extended or reused | Dependency / acceptance | Status and evidence |
 | --- | --- | --- | --- |
-| A: Saved P&L and aggregate totals plus local safety journal produces sanitized cash/position/reservation diagnostic and actual RiskEngine rejection where evidence is incomplete | demo_cash, broker_evidence_gate, risk, execution journals | PR25; mocked response→normalization→reconciliation→risk tests; no writes to owner state | Implemented/tested: 36 diagnostic tests, 960 full-suite tests; full broker admission externally blocked |
+| A: Saved P&L and aggregate totals plus local safety journal produces sanitized cash/position/reservation diagnostic and actual RiskEngine rejection where evidence is incomplete | demo_cash, broker_evidence_gate, risk, execution journals | PR #26 → PR #25; mocked response→normalization→reconciliation→risk tests; no writes to owner state | Implemented/tested: 36 diagnostic tests, 960 full-suite tests; full broker admission externally blocked |
 | B: Contradictory broker execution outcomes stay unknown through restart, with exact ticket authorization retained | execution/reconcile, client, engine, tests | Same core PR as A; operation-level public v3 audit, partial/terminal/restart regressions | Implemented/tested: 22 new lifecycle tests, same 960-test run; authenticated compatibility externally blocked |
-| C: One Windows command produces SHADOW results, daily/weekly diagnostics and local dashboard from hourly or 5Min ORB replay; durable scheduled slot claims suppress duplicate runs | backtest, intraday, scanner/strategy/risk and report journals | Dependent application PR; EUR500/1000 CLI demonstrations, schedule/restart/report tests | Pending application checkpoint; real-time provider wiring deferred |
+| C: One Windows command produces SHADOW results, daily/weekly diagnostics and local dashboard from hourly or 5Min ORB replay; durable scheduled slot claims suppress duplicate runs | backtest, intraday, scanner/strategy/risk and report journals | Dependent application PR; EUR500/1000 CLI demonstrations, schedule/restart/report tests | Implemented/tested: 14 application tests; 974 full-suite tests; real-time provider wiring deferred |
 | D: Offline SEC feed ingestion preserves publication/observation/revisions and exposes incomplete earnings coverage | existing earnings/strategy interfaces, new bounded source adapter | Separate dependent PR; XML safety, as-of/dedup/coverage tests | Pending news checkpoint; network source acquisition and qualified future calendar externally blocked |
 
-Core checkpoint (Linux / Python 3.12, 29 October 2026): `python -m pytest -q` **960 passed**;
+Core checkpoint [PR #26](https://github.com/orkunkilic123-cloud/etoro-ai-trading-bot/pull/26),
+commit `4564a993dcc9c24e6e3334a4cb5c3dd300879d1c` (Linux / Python 3.12, 29 October 2026): `python -m pytest -q` **960 passed**;
 `python -m ruff check .`, `python -m ruff format --check .`, strict `python -m mypy`
 (118 files), `python -m pip check`, editable installation without build isolation, Hatchling
 wheel/sdist builds and wheel build from the sdist passed. Synthetic intraday CLI runs for
@@ -34,6 +35,15 @@ EUR500/1000 passed. The existing `backtest.intraday.benchmark` passed (21 sessio
 [execution contract review](EXECUTION_CONTRACT_REVIEW.md) for supported behavior and blockers.
 No credentials, authenticated broker calls or orders were used. Windows was not run; hosted CI
 is unavailable under the owner's reported Actions allowance and is not replaced by local results.
+
+Shadow checkpoint (Linux / Python 3.12.14, 29 October 2026): full pytest **974 passed**;
+Ruff lint/format, strict mypy (124 files), dependency consistency, editable install, wheel/sdist,
+wheel build from sdist and wheel installation passed. All four actual CLI paths (hourly/ORB ×
+EUR500/EUR1000) produced synthetic reports/dashboard. The existing intraday benchmark passed
+(21 sessions, 78 bars/session, 10,000 model draws; p50 0.119s/p95 0.163s, simulation 0.085s).
+Tests cover atomic duplicate claims, restart/failure/missed runs, source-specific decision counts,
+cost/currency arithmetic and explicit partial-period coverage. See [SHADOW_APP.md](SHADOW_APP.md).
+Windows and hosted CI remain unverified. These are software fixtures, not historical performance.
 
 External blockers remain visible in each module's documentation. No `complete=True` broker
 snapshot will be manufactured from local assertions. Report-only shadow state is never imported
