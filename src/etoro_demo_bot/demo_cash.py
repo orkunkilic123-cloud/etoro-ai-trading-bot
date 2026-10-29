@@ -53,7 +53,11 @@ def _normalize_demo_cash(data: Mapping[str, Any]) -> DemoCashObservation:
     reserved_open = Decimal(0)
     reserved_orders = Decimal(0)
     for item in opening:
-        if not isinstance(item, dict) or type(item.get("mirrorID")) is not int:
+        if (
+            not isinstance(item, dict)
+            or type(item.get("mirrorID")) is not int
+            or item["mirrorID"] < 0
+        ):
             raise IncompleteDemoSnapshot("Opening order incomplete")
         amount = _amount(item.get("amount"))
         if item["mirrorID"] == 0:
@@ -88,7 +92,11 @@ def normalize_demo_pnl_response(data: Mapping[str, Any]) -> DemoCashObservation:
         raise IncompleteDemoSnapshot("Opening orders missing")
     normalized = []
     for item in opening:
-        if not isinstance(item, Mapping) or type(item.get("mirrorId")) is not int:
+        if (
+            not isinstance(item, Mapping)
+            or type(item.get("mirrorId")) is not int
+            or item["mirrorId"] < 0
+        ):
             raise IncompleteDemoSnapshot("Opening order incomplete")
         normalized.append({"mirrorID": item["mirrorId"], "amount": item.get("amount")})
     return normalize_demo_cash(

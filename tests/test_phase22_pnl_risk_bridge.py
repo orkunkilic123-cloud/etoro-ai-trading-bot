@@ -126,3 +126,21 @@ def test_normalized_observation_cannot_pass_real_risk(tmp_path: Path) -> None:
     )
     assert not decision.passed
     assert not decision.execution_authorized
+
+
+@pytest.mark.parametrize("enveloped", [False, True])
+def test_negative_mirror_identity_cannot_hide_reservations(enveloped: bool) -> None:
+    payload = _pnl()
+    payload["ordersForOpen"] = [{"mirrorID": -1, "amount": "900"}]
+    if enveloped:
+        payload["ordersForOpen"] = [{"mirrorId": -1, "amount": "900"}]
+        payload = {"clientPortfolio": payload}
+    with pytest.raises(IncompleteDemoSnapshot):
+        prepare_pnl_risk_observation(
+            _evidence(),
+            pnl_response=payload,
+            account_id="synthetic-demo",
+            equity=Decimal(1500),
+            exposures=(),
+            observed_at=datetime.now(UTC),
+        )
