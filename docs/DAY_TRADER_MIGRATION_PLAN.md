@@ -23,7 +23,7 @@ recorded at each checkpoint below. Windows and hosted CI are separate evidence g
 | A: Saved P&L and aggregate totals plus local safety journal produces sanitized cash/position/reservation diagnostic and actual RiskEngine rejection where evidence is incomplete | demo_cash, broker_evidence_gate, risk, execution journals | PR #26 → PR #25; mocked response→normalization→reconciliation→risk tests; no writes to owner state | Implemented/tested: 36 diagnostic tests, 960 full-suite tests; full broker admission externally blocked |
 | B: Contradictory broker execution outcomes stay unknown through restart, with exact ticket authorization retained | execution/reconcile, client, engine, tests | Same core PR as A; operation-level public v3 audit, partial/terminal/restart regressions | Implemented/tested: 22 new lifecycle tests, same 960-test run; authenticated compatibility externally blocked |
 | C: One Windows command produces SHADOW results, daily/weekly diagnostics and local dashboard from hourly or 5Min ORB replay; durable scheduled slot claims suppress duplicate runs | backtest, intraday, scanner/strategy/risk and report journals | Dependent application PR; EUR500/1000 CLI demonstrations, schedule/restart/report tests | Implemented/tested: 14 application tests; 974 full-suite tests; real-time provider wiring deferred |
-| D: Offline SEC feed ingestion preserves publication/observation/revisions and exposes incomplete earnings coverage | existing earnings/strategy interfaces, new bounded source adapter | Separate dependent PR; XML safety, as-of/dedup/coverage tests | Pending news checkpoint; network source acquisition and qualified future calendar externally blocked |
+| D: Offline SEC feed ingestion preserves publication/observation/revisions and exposes incomplete earnings coverage | existing earnings/strategy interfaces, new bounded source adapter | Separate dependent PR; XML safety, as-of/dedup/coverage tests | Implemented/tested: 32 news tests; 1006 full-suite tests; source acquisition deferred, qualified future calendar externally blocked |
 
 Core checkpoint [PR #26](https://github.com/orkunkilic123-cloud/etoro-ai-trading-bot/pull/26),
 commit `4564a993dcc9c24e6e3334a4cb5c3dd300879d1c` (Linux / Python 3.12, 29 October 2026): `python -m pytest -q` **960 passed**;
@@ -36,7 +36,8 @@ EUR500/1000 passed. The existing `backtest.intraday.benchmark` passed (21 sessio
 No credentials, authenticated broker calls or orders were used. Windows was not run; hosted CI
 is unavailable under the owner's reported Actions allowance and is not replaced by local results.
 
-Shadow checkpoint (Linux / Python 3.12.14, 29 October 2026): full pytest **974 passed**;
+Shadow checkpoint [PR #27](https://github.com/orkunkilic123-cloud/etoro-ai-trading-bot/pull/27),
+commit `1572856e1b0068f4b162dda0281c63afb87bb0f3` (Linux / Python 3.12.14, 29 October 2026): full pytest **974 passed**;
 Ruff lint/format, strict mypy (124 files), dependency consistency, editable install, wheel/sdist,
 wheel build from sdist and wheel installation passed. All four actual CLI paths (hourly/ORB ×
 EUR500/EUR1000) produced synthetic reports/dashboard. The existing intraday benchmark passed
@@ -44,6 +45,29 @@ EUR500/EUR1000) produced synthetic reports/dashboard. The existing intraday benc
 Tests cover atomic duplicate claims, restart/failure/missed runs, source-specific decision counts,
 cost/currency arithmetic and explicit partial-period coverage. See [SHADOW_APP.md](SHADOW_APP.md).
 Windows and hosted CI remain unverified. These are software fixtures, not historical performance.
+
+News checkpoint on `feature/offline-news-events` (Linux / Python 3.12.14, 29 October 2026):
+full pytest **1006 passed**; Ruff lint/format, strict mypy (129 files), dependency consistency,
+editable installation, wheel/sdist, wheel build from sdist and wheel installation passed.
+A synthetic saved-feed CLI smoke imported one revision, then zero on repeat; as-of lookup
+returned zero before observation and one at observation. EUR500/EUR1000 intraday CLI runs and
+the benchmark passed (21 sessions, 78 bars/session, 10,000 model draws; p50 0.101s/p95 0.126s,
+simulation 0.078s). Tests cover UTC overflow sanitization, closed SQLite handles and byte-identical
+rejection of unrelated safety databases. See [NEWS_EVENTS.md](NEWS_EVENTS.md).
+Windows and hosted CI remain unverified; no paid access or authenticated calls were attempted.
+
+Next concrete task: review the dependent PRs in order, then run the same offline checks on Windows.
+Separately authorized owner-operated read-only evidence collection is needed before further broker
+admission work. No first-order action follows automatically from these checkpoints.
+
+| Remaining evidence/capability | Attempt and established result | Blocked behavior / smallest safe next step |
+| --- | --- | --- |
+| Broker schema compatibility, full unfiltered responses and independently verified Demo identity | Current public OpenAPI plus deterministic P&L/aggregate tests; schema/example spelling differs, saved files do not prove original request/identity | Authoritative AccountSnapshot remains blocked. Owner may separately authorize a private read-only Demo workflow, retain fresh exact responses locally, and run the diagnostic; do not send raw account data to chat. |
+| Authoritative broker/local reservation handoff and cash-flow baseline | Cross-checked broker IDs/instruments against read-only local journal; retained all uncertain holds | Safe release/deduplication remains blocked. Review privately verified identity and cumulative execution evidence; never clear reservations or restart safety state to pass. |
+| Price-bounded order and observed stop/fill/idempotency semantics | Public v3 contract and mocked lifecycle regression; market-only open has no enforced maximum entry price | First owner-approved order remains blocked. Verify permitted contract and account behavior read-only before separately reviewing any exact-order authorization. |
+| Qualified genuine intraday evidence | Existing replay gates retained; demonstrated all four synthetic budget/pipeline paths | Genuine-data shadow/live analysis remains deferred until truthful licensed point-in-time market/FX/cost/action/eligibility/earnings inputs qualify. No synthetic results count as performance evidence. |
+| Permitted feed acquisition and complete future earnings calendar | Saved Atom parsing, raw checksums, revision/as-of tests; actual earnings guard rejects unknown window | Source acquisition/display wiring remains deferred; future earnings admission blocked. Owner can import legitimately obtained public feed bytes locally, but absent filings never establish no earnings event. |
+| Windows and hosted CI | Full Linux checks at every code milestone; no Windows runtime, no Actions reruns under reported exhausted allowance | Platform/hosted verification remains open. Owner runs documented Windows offline commands; hosted checks await allowance restoration, without disabling or bypassing them. |
 
 External blockers remain visible in each module's documentation. No `complete=True` broker
 snapshot will be manufactured from local assertions. Report-only shadow state is never imported

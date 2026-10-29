@@ -428,3 +428,18 @@ Start-Process .backtest-output\shadow\dashboard.html
 Initialize a new isolated research root once, then reuse it. Never replace production safety state.
 Duplicate pipeline/budget/UTC-day runs remain blocked after restart. The dashboard shows synthetic
 results, unverified broker/news state and disabled execution; it is not a live portfolio view.
+
+## Saved SEC filing events (offline)
+
+Follow [NEWS_EVENTS.md](NEWS_EVENTS.md) for the saved-feed command, supported format and
+truthful observation timestamps. The command does not download a feed or use credentials.
+Use a separate news archive; unrelated or incomplete SQLite schemas are rejected before writes.
+
+```powershell
+.\.venv\Scripts\python.exe -m etoro_demo_bot.news --help
+.\.venv\Scripts\python.exe -m pytest -q tests/test_news_events.py
+```
+
+A filing feed is not a future earnings calendar. Coverage remains unknown and the existing
+Strategy Engine rejects it when complete earnings evidence is required. Source acquisition,
+instrument mapping and point-in-time verification remain separate work.

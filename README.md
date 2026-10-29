@@ -138,3 +138,10 @@ The [shadow application](docs/SHADOW_APP.md) runs the existing hourly or five-mi
 simulation with EUR500/EUR1000 budgets, durable run scheduling, a static local dashboard and
 daily/weekly reports. It uses synthetic fixtures and has no broker connection or order controls.
 Windows startup and Task Scheduler instructions are included; no task runs while the PC is off.
+
+### Saved SEC filing events
+
+The [offline news adapter](docs/NEWS_EVENTS.md) imports owner-saved SEC Atom bytes into a
+checksummed local archive with revision history and as-of queries. It separates publication,
+update and observation times from simple keyword tags. It never treats missing filings as
+complete earnings coverage and never downloads stories or changes strategy decisions.
