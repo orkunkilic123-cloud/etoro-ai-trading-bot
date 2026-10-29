@@ -66,7 +66,10 @@ def normalize_demo_cash(data: Mapping[str, Any]) -> DemoCashObservation:
     for item in opening:
         if not isinstance(item, dict):
             raise IncompleteDemoSnapshot("ordersForOpen", "incompatible structure")
-        if "mirrorID" in item and "mirrorId" in item:\n            raise IncompleteDemoSnapshot("mirrorID", "incompatible structure")\n        mirror_key = "mirrorID" if "mirrorID" in item else "mirrorId"\n        mirror_id = _required(item, mirror_key)
+        if "mirrorID" in item and "mirrorId" in item:
+            raise IncompleteDemoSnapshot("mirrorID", "incompatible structure")
+        mirror_key = "mirrorID" if "mirrorID" in item else "mirrorId"
+        mirror_id = _required(item, mirror_key)
         if type(mirror_id) is not int:
             raise IncompleteDemoSnapshot("mirrorID", "invalid type")
         amount = _amount(_required(item, "amount"), "amount")
