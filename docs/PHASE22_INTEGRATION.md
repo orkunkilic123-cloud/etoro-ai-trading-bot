@@ -18,3 +18,24 @@ This integration accepts only inputs explicitly identified as the official P&L r
 4. Only then review an isolated owner-only one-order approval and preview interface with exact payload digest and short expiry; recheck risk immediately before one dispatch and reconcile outcomes without automatic retry of uncertain submissions.
 
 **No first-order execution command is provided.** Existing disabled execution code, tests, research and recovery mechanisms remain untouched. This is a partial Phase 22 draft and must not be merged until integration and final-head Ubuntu/Windows CI are reviewed.
+
+## Follow-up local contract review
+
+Retrieved the public operation-level specification without authentication on 29 October 2026:
+https://api-portal.etoro.com/api-reference/openapi.json
+SHA-256: 549e77e8f37dc167dfb6295e4771faf1f9bb71f62d0e925109cd6aa9a5d299a0
+
+v2: responses ['200', '400', '401', '404', '500', '429']; request {'$ref': '#/components/schemas/TradingDemoAdminApi_UnifiedOrderRequest'}
+v3: responses ['202', '400', '401', '403', '404', '500', '429']; request {'$ref': '#/components/schemas/TradingDemoAdminApi_UnifiedOrderRequest'}
+
+Both versions currently coexist. v3 requires stricter settlementType validation and returns 202; v2 returns 200. Both require asynchronous reconciliation via GET /api/v2/trading/info/demo/orders:lookup, using orderId or referenceId. Acceptance is not a fill. No route was switched or enabled. Broker idempotency retention, account entitlements and actual compatibility remain unverified.
+
+The P&L 200 schema is PortfolioResponseWithPnl with clientPortfolio envelope and camel-case mirrorId. Added an offline cash adapter for that verified shape and connected it to the existing incomplete risk snapshot. Decode JSON numbers as Decimal; binary floats are deliberately rejected. Position valuation/identity, mirrored portfolios, complete reservations and cash-flow reconciliation remain unverified; no snapshot is promoted to authoritative. The older explicit normalized-input helper remains supported. Monetary precision is isolated and extreme exponents/duplicate exposures now fail closed.
+
+GitHub-hosted CI remains pending/unavailable because of the owner-reported Actions billing allowance; no workflow or billing workaround was introduced. Local checks are recorded separately.
+
+### Local verification record
+
+29 October 2026, Codex Linux/Python 3.12: complete pytest **900 passed**; Ruff lint and formatting passed; strict mypy passed (115 files); pip check passed; editable installation and hatchling wheel/sdist builds passed. Existing offline intraday CLI benchmark/bootstrap demos completed for both EUR 500 and EUR 1,000 into separate new /tmp directories. These are synthetic engineering outputs, not historical performance evidence. Windows was not run locally. GitHub-hosted CI is pending because of the owner-reported exhausted allowance; no additional run was requested and no workflow changed.
+
+The code is ready for review as a partial, disabled integration improvement, not deployment or first-trade clearance. The shortest safe path remains owner-operated read-only schema/identity and position/cash reconciliation; a separately reviewed current v3 payload/status adapter and uncertain-outcome recovery; then exact one-ticket owner authorization with fresh risk checks. Do not clear or recreate safety state to obtain a pass.

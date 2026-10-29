@@ -3,6 +3,7 @@
 from dataclasses import fields
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
@@ -71,3 +72,57 @@ def test_missing_broker_attestation_blocks() -> None:
             exposures=(),
             observed_at=datetime.now(UTC),
         )
+
+
+def test_documented_envelope_and_precision() -> None:
+    from decimal import localcontext
+
+    from etoro_demo_bot.demo_cash import normalize_demo_pnl_response
+
+    payload = {
+        "clientPortfolio": {
+            "credit": "1000.123456",
+            "ordersForOpen": [{"mirrorId": 0, "amount": "100.000001"}],
+            "orders": [{"amount": "50.000002"}],
+        }
+    }
+    with localcontext() as context:
+        context.prec = 4
+        result = normalize_demo_pnl_response(payload)
+    assert result.available_cash == Decimal("850.123453")
+    assert not result.trusted_for_risk
+
+
+def test_duplicate_exposures_rejected() -> None:
+    with pytest.raises(ValueError, match="exposure"):
+        prepare_pnl_risk_observation(
+            _evidence(),
+            pnl_response=_pnl(),
+            account_id="synthetic-demo",
+            equity=Decimal("1500"),
+            exposures=(Exposure(1, Decimal(10), 1),) * 2,
+            observed_at=datetime.now(UTC),
+        )
+
+
+def test_normalized_observation_cannot_pass_real_risk(tmp_path: Path) -> None:
+    from etoro_demo_bot.risk import Proposal, RiskEngine, RiskStore
+
+    now = datetime.now(UTC)
+    snapshot = prepare_pnl_risk_observation(
+        _evidence(),
+        pnl_response=_pnl(),
+        account_id="synthetic-demo",
+        equity=Decimal("1500"),
+        exposures=(),
+        observed_at=now,
+    )
+    store = RiskStore.initialize(tmp_path / "risk.sqlite", "synthetic-demo")
+    store.establish_day(now.date(), snapshot.equity)
+    decision = RiskEngine(store).evaluate(
+        Proposal("synthetic", 1, Decimal(1), Decimal(10), Decimal(9), now, Decimal(0)),
+        snapshot,
+        now=now,
+    )
+    assert not decision.passed
+    assert not decision.execution_authorized

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
-from .demo_cash import DemoCashObservation, normalize_demo_cash
+from .demo_cash import DemoCashObservation, normalize_demo_cash, normalize_demo_pnl_response
 from .risk.models import AccountSnapshot, Exposure
 
 
@@ -83,16 +83,19 @@ def prepare_risk_snapshot(
     age = now - observed_at.astimezone(UTC)
     if age < timedelta(0) or age > timedelta(seconds=60):
         raise ValueError("Stale broker observations")
+    seen: set[int] = set()
     for exposure in exposures:
         if (
             not isinstance(exposure, Exposure)
             or type(exposure.instrument_id) is not int
             or exposure.instrument_id <= 0
+            or exposure.instrument_id in seen
             or not money(exposure.notional, positive=True)
             or type(exposure.positions) is not int
             or exposure.positions <= 0
         ):
             raise ValueError("Invalid broker exposure")
+        seen.add(exposure.instrument_id)
     return AccountSnapshot(
         account_id=account_id,
         equity=equity,
@@ -119,7 +122,11 @@ def prepare_pnl_risk_observation(
     This does not authenticate a payload or certify its account or position
     identity. Therefore the risk snapshot stays incomplete and non-admissible.
     """
-    cash: DemoCashObservation = normalize_demo_cash(pnl_response)
+    cash: DemoCashObservation = (
+        normalize_demo_pnl_response(pnl_response)
+        if "clientPortfolio" in pnl_response
+        else normalize_demo_cash(pnl_response)
+    )
     if cash.trusted_for_risk:
         raise ValueError("Unexpected trusted broker cash")
     return prepare_risk_snapshot(
