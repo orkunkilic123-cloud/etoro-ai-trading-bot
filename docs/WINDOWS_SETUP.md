@@ -412,3 +412,19 @@ totals and separately verified identity/permissions remain necessary. Never rese
 re-date a file to pass checks. [EXECUTION_CONTRACT_REVIEW.md](EXECUTION_CONTRACT_REVIEW.md)
 records the supported public contract and remaining order blockers. Windows execution of these
 new tests is unverified until actually run on Windows.
+
+## Local SHADOW application
+
+Follow [SHADOW_APP.md](SHADOW_APP.md) for the full startup, scheduling, restart and report contract.
+From the configured environment, without credentials:
+
+```powershell
+.\.venv\Scripts\python.exe -m etoro_demo_bot.shadow init --root .backtest-output\shadow
+.\.venv\Scripts\python.exe -m etoro_demo_bot.shadow run --root .backtest-output\shadow --pipeline hourly --eur 500
+.\.venv\Scripts\python.exe -m etoro_demo_bot.shadow run --root .backtest-output\shadow --pipeline orb --eur 1000
+Start-Process .backtest-output\shadow\dashboard.html
+```
+
+Initialize a new isolated research root once, then reuse it. Never replace production safety state.
+Duplicate pipeline/budget/UTC-day runs remain blocked after restart. The dashboard shows synthetic
+results, unverified broker/news state and disabled execution; it is not a live portfolio view.

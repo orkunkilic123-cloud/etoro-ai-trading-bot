@@ -131,3 +131,10 @@ They produce sanitized summaries and keep incomplete snapshots blocked. The
 [execution review](docs/EXECUTION_CONTRACT_REVIEW.md) documents stricter fill consistency and
 restart recovery. This is offline software validation; broker compatibility and first-order
 readiness remain unverified. Follow the [active migration checkpoints](docs/DAY_TRADER_MIGRATION_PLAN.md).
+
+### Local shadow application
+
+The [shadow application](docs/SHADOW_APP.md) runs the existing hourly or five-minute ORB
+simulation with EUR500/EUR1000 budgets, durable run scheduling, a static local dashboard and
+daily/weekly reports. It uses synthetic fixtures and has no broker connection or order controls.
+Windows startup and Task Scheduler instructions are included; no task runs while the PC is off.
