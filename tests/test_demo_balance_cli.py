@@ -22,6 +22,21 @@ def fixture() -> dict[str, object]:
     }
 
 
+def test_json_number_and_subcent_precision_preserved() -> None:
+    data = fixture()
+    data["credit"] = 1000.125
+    result = display_demo_balance(data)
+    assert "USD 650.125" in result
+    assert "USD 1000.125" in result
+
+
+def test_empty_pending_order_arrays() -> None:
+    result = display_demo_balance(
+        {"credit": 1000, "ordersForOpen": [], "orders": []}
+    )
+    assert "Available cash (calculated): USD 1000.00" in result
+
+
 def test_cash_formula_and_precise_labels() -> None:
     result = display_demo_balance(fixture())
     assert "Available cash (calculated): USD 650.00" in result
