@@ -4,6 +4,10 @@ This deliberately cannot normalize unknown broker shapes into trusted risk input
 """
 
 from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
+
+from .risk.models import AccountSnapshot, Exposure
 
 
 @dataclass(frozen=True)
@@ -41,3 +45,59 @@ def verify_evidence(evidence: BrokerEvidence) -> IntegrationGate:
         if not flag:
             missing.append(name)
     return IntegrationGate(tuple(missing), not missing)
+
+
+def prepare_risk_snapshot(
+    evidence: BrokerEvidence,
+    *,
+    account_id: str,
+    equity: Decimal,
+    available_balance: Decimal,
+    exposures: tuple[Exposure, ...],
+    observed_at: datetime,
+) -> AccountSnapshot:
+    """Bridge independently reviewed observations to risk, never to execution.
+
+    Values must be supplied by a separate trusted adapter. No raw broker
+    response, guessed account identifiers, or stale observations are accepted.
+    """
+    from datetime import UTC, timedelta
+
+    from .risk.models import identifier, money
+
+    gate = verify_evidence(evidence)
+    if (
+        not gate.valid_evidence
+        or not identifier(account_id)
+        or not money(equity, positive=True)
+        or not money(available_balance)
+        or available_balance > equity
+        or not isinstance(observed_at, datetime)
+        or observed_at.tzinfo is None
+        or not isinstance(exposures, tuple)
+    ):
+        raise ValueError("Unverified broker observations")
+    now = datetime.now(UTC)
+    age = now - observed_at.astimezone(UTC)
+    if age < timedelta(0) or age > timedelta(seconds=60):
+        raise ValueError("Stale broker observations")
+    for exposure in exposures:
+        if (
+            not isinstance(exposure, Exposure)
+            or type(exposure.instrument_id) is not int
+            or exposure.instrument_id <= 0
+            or not money(exposure.notional, positive=True)
+            or type(exposure.positions) is not int
+            or exposure.positions <= 0
+        ):
+            raise ValueError("Invalid broker exposure")
+    return AccountSnapshot(
+        account_id=account_id,
+        equity=equity,
+        available_balance=available_balance,
+        exposures=exposures,
+        observed_at=observed_at,
+        demo=True,
+        complete=True,
+        cash_flows_reconciled=True,
+    )
