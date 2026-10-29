@@ -25,10 +25,10 @@ class DemoCashObservation:
 
 
 def _amount(value: Any) -> Decimal:
-    if isinstance(value, bool) or not isinstance(value, str | int | Decimal):
+    if isinstance(value, bool) or not isinstance(value, str | int | float | Decimal):
         raise IncompleteDemoSnapshot("Invalid amount")
     try:
-        number = Decimal(value)
+        number = Decimal(str(value))
     except InvalidOperation:
         raise IncompleteDemoSnapshot("Invalid amount") from None
     if not number.is_finite() or number < 0 or len(number.as_tuple().digits) > 24:
