@@ -41,13 +41,16 @@ def test_unverified_evidence_cannot_enter_risk() -> None:
         prepare_risk_snapshot(BrokerEvidence(), **sample(datetime.now(UTC)))  # type: ignore[arg-type]
 
 
-@pytest.mark.parametrize("replacement", [
-    {"account_id": ""},
-    {"equity": Decimal("NaN")},
-    {"available_balance": Decimal("20000")},
-    {"exposures": (Exposure(0, Decimal("10"), 1),)},
-    {"exposures": (Exposure(1, Decimal("10"), 0),)},
-])
+@pytest.mark.parametrize(
+    "replacement",
+    [
+        {"account_id": ""},
+        {"equity": Decimal("NaN")},
+        {"available_balance": Decimal("20000")},
+        {"exposures": (Exposure(0, Decimal("10"), 1),)},
+        {"exposures": (Exposure(1, Decimal("10"), 0),)},
+    ],
+)
 def test_invalid_broker_observations_rejected(replacement: dict[str, object]) -> None:
     kwargs = sample(datetime.now(UTC)) | replacement
     with pytest.raises(ValueError):
