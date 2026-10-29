@@ -1,25 +1,57 @@
-# Demo balance verification — portfolio-only safety blocker
+# Owner-operated read-only Demo P&L cash check
 
-## Codespaces command
+## Codespaces
 
-After installing the project with `python -m pip install --no-deps --no-build-isolation -e .` and privately configuring the existing four `ETORO_*` environment variables:
+Install the existing project and use your privately configured environment variables
+`ETORO_API_KEY`, `ETORO_USER_KEY`, `ETORO_ENVIRONMENT=demo`
+and `ETORO_DEMO_KEY_CONFIRMED=true`:
 
 ```bash
+python -m pip install -r requirements-dev.lock
+python -m pip install --no-deps --no-build-isolation -e .
 etoro-demo show-demo-balance
 ```
 
-**This command currently fails closed by design.** It only uses the existing authenticated GET `/api/v1/trading/info/demo/portfolio`, but official eToro guidance specifies a different read route, GET `/api/v1/trading/info/demo/pnl`, for calculating available USD cash and equity. No authenticated requests were made during development. No new endpoint or execution permission was introduced.
+The command reads **only** `GET https://public-api.etoro.com/api/v1/trading/info/demo/pnl`.
+Existing `check-demo` continues to read the original Demo portfolio GET. Both use the
+same credentials policy, bounded retries and strict exact-route allowlist; all order
+methods, Real paths and arbitrary query parameters are rejected. No authenticated reads
+or order requests were made in development.
 
-A successful `check-demo` continues to confirm only read access to the Demo portfolio endpoint; it cannot prove account total, currency, or equity. The new command does not display any financial figures, because the available official documentation does not independently establish the required balance response fields for the allowed route. It reports a sanitized error and exits nonzero. No credentials, response bodies, or authentication headers are printed.
+## Source-backed formulas (USD cash values only)
 
-## Review blockers
+According to the official eToro available-cash guide:
 
-- The P&L response schema, account currency, direct and mirrored positions, and complete pending-order arrays need official contract verification for a future separately reviewed **read-only Demo P&L integration**.
-- Do not treat `credit` as equity or total balance. Available cash is a documented calculation from the P&L response; pending-order allocations are not necessarily all account holds.
-- `accountCurrencyId=1` is **not** established here as authoritative proof of USD; prior synthetic fixtures were not account attestation.
-- Do not pass this observation into the Risk Manager, grant execution permission, or enable autonomous trading.
-- `check-demo` behavior and its success message must remain unchanged.
+- Manual reserved funds = sum of `ordersForOpen[].amount` for `mirrorID == 0`.
+- MIT-order reserved funds = sum of every `orders[].amount`.
+- Available cash = `credit - manual reserved funds - MIT-order reserved funds`.
 
-Official references:
+All necessary lists and numeric values must be present, finite and nonnegative.
+Mirrored opening orders are deliberately excluded, as the official formula prescribes.
+No balance is printed if any required cash field is missing or invalid.
+
+`credit` is printed **as credit only**, never as total account balance. Available
+cash is a calculation, not equity. Official equity is available cash plus total
+invested and unrealized P&L, requiring a more comprehensive validated response
+(including mirror exposures and P&L). This command deliberately marks equity,
+total account balance and open positions as unavailable instead of guessing.
+
+The eToro guides explicitly scope the cash and equity formulas to USD. Therefore
+the label USD refers to the **documented cash formula denomination**, not a
+verified personal account base currency. This result is an untrusted observation,
+not account identity attestation or permission to trade, and is never passed to
+the Risk Manager as a trusted snapshot.
+
+## Remaining limitations
+
+The exact live owner response and account-scoped entitlements have not been
+checked (no credentials or authenticated requests permitted). P&L account currency,
+total balance and reliable complete position count remain unverified. Pending-order
+allocations need not capture every fee or external hold. `credit` should not be
+conflated with equity or freely spendable capital. When source contracts are
+incomplete, the read fails closed; sanitized errors never reveal response data.
+
+Official sources:
+
 - https://api-portal.etoro.com/guides/calculate-available-cash
 - https://api-portal.etoro.com/guides/calculate-equity
