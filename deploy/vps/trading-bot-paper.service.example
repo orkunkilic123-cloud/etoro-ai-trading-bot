@@ -1,0 +1,26 @@
+# Example only. DO NOT enable until a tested PAPER-only runner exists.
+[Unit]
+Description=Alpaca paper trading bot (disabled deployment template)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=tradingbot
+Group=tradingbot
+WorkingDirectory=/opt/trading-bot
+Environment=PAPER_ONLY=1
+EnvironmentFile=/etc/trading-bot/paper.env
+# Deliberately not executable: replace only after paper-only entrypoint is audited.
+ExecStart=/usr/bin/false
+Restart=on-failure
+RestartSec=30
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/trading-bot /var/log/trading-bot
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
